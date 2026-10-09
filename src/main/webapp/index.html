@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home | Java Quiz Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+    <h1>Java-Based Online Quiz Platform</h1>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="login">Login</a>
+        <a href="quiz">My Quizzes</a>
+        <a href="result">My Results</a>
+        <a href="admin">Admin</a>
+    </nav>
+</header>
+
+<main>
+    <section class="card">
+        <h2>Web Module (Java Servlets)</h2>
+        <p>
+            This web module is the <b>server-side Java</b> part of the project.
+            It is built with plain <b>Java Servlets + JDBC + MySQL</b>
+            (no React, no Node.js, no PHP).
+        </p>
+        <p>
+            The <b>Swing desktop application</b> (LoginFrame, dashboards, quiz timer thread)
+            is the primary GUI of the project. Start it with:
+        </p>
+        <pre>mvn compile exec:java</pre>
+        <p>
+            Architecture of this web module:
+        </p>
+        <pre>Servlet  -&gt;  Service  -&gt;  DAO  -&gt;  JDBC  -&gt;  MySQL</pre>
+        <a class="button" href="login">Login to the web module</a>
+    </section>
+
+    <section class="card">
+        <h2>Default login credentials</h2>
+        <table>
+            <thead>
+            <tr><th>Role</th><th>Email</th><th>Password</th></tr>
+            </thead>
+            <tbody>
+            <tr><td>Administrator</td><td>admin@quiz.com</td><td>admin123</td></tr>
+            <tr><td>Quiz Creator</td><td>creator@quiz.com</td><td>creator123</td></tr>
+            <tr><td>Participant</td><td>student@quiz.com</td><td>student123</td></tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+
+<footer>Java Servlets + JDBC + MySQL | Java-Based Online Quiz Platform</footer>
+</body>
+</html>

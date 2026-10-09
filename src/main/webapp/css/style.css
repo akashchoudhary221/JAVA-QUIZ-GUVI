@@ -1,0 +1,221 @@
+/* Java-Based Online Quiz Platform - simple stylesheet for the servlet module */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #ecf0f1;
+    color: #2c3e50;
+}
+
+header {
+    background: #243b55;
+    color: #fff;
+    padding: 18px 28px;
+}
+
+header h1 {
+    margin: 0 0 8px 0;
+    font-size: 24px;
+}
+
+nav a {
+    color: #cfe3ff;
+    text-decoration: none;
+    margin-right: 18px;
+    font-size: 14px;
+}
+
+nav a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+main {
+    max-width: 980px;
+    margin: 24px auto;
+    padding: 0 16px;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #dce0e4;
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+
+.card.narrow {
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+h2 {
+    margin-top: 0;
+}
+
+label {
+    display: block;
+    margin: 12px 0 6px;
+    font-weight: 600;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #c7ccd1;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+button,
+.button {
+    display: inline-block;
+    margin-top: 16px;
+    background: #2980b9;
+    color: #fff;
+    border: 0;
+    padding: 9px 18px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+button.danger {
+    background: #c0392b;
+}
+
+button:hover,
+.button:hover {
+    background: #1f6391;
+}
+
+form.inline {
+    display: inline-block;
+    margin: 0;
+}
+
+form.inline button {
+    margin-top: 0;
+    padding: 5px 12px;
+    font-size: 13px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+th, td {
+    border: 1px solid #dce0e4;
+    padding: 8px 10px;
+    text-align: left;
+}
+
+th {
+    background: #f4f6f7;
+}
+
+fieldset {
+    border: 1px solid #dce0e4;
+    border-radius: 4px;
+    margin: 14px 0;
+    padding: 10px 14px;
+}
+
+legend {
+    font-weight: 600;
+}
+
+.option {
+    display: block;
+    margin: 6px 0;
+    font-weight: normal;
+}
+
+.alert {
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin: 12px 0;
+}
+
+.alert.error {
+    background: #fdecea;
+    color: #922b21;
+    border: 1px solid #f5b7b1;
+}
+
+.alert.success {
+    background: #eafaf1;
+    color: #196f3d;
+    border: 1px solid #a9dfbf;
+}
+
+.stats {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.stat {
+    flex: 1 1 150px;
+    background: #f8f9f9;
+    border: 1px solid #dce0e4;
+    border-radius: 6px;
+    text-align: center;
+    padding: 16px 8px;
+}
+
+.stat span {
+    font-size: 30px;
+    font-weight: bold;
+    color: #2980b9;
+}
+
+.stat p {
+    margin: 6px 0 0;
+    font-size: 13px;
+}
+
+.muted {
+    color: #7f8c8d;
+    font-size: 13px;
+}
+
+.correct {
+    color: #196f3d;
+    font-weight: bold;
+}
+
+.wrong {
+    color: #922b21;
+    font-weight: bold;
+}
+
+.skipped {
+    color: #7d6608;
+    font-weight: bold;
+}
+
+pre {
+    background: #f4f6f7;
+    border: 1px solid #dce0e4;
+    padding: 14px;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+footer {
+    text-align: center;
+    color: #7f8c8d;
+    font-size: 12px;
+    padding: 18px;
+}
