@@ -6,26 +6,29 @@ import com.quizplatform.model.User;
 import com.quizplatform.service.AuthenticationService;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 
 /**
- * Login window.
+ * Modern login window.
  *
  * Demonstrates:
  *  - Swing GUI (JFrame, JPanel, JTextField, JPasswordField, JButton)
- *  - exception handling (try / catch of custom exceptions -> JOptionPane)
+ *  - Exception handling (try / catch of custom exceptions -> JOptionPane)
  *  - RUNTIME POLYMORPHISM: after a successful login the User reference
  *    decides which dashboard window is opened (user.displayDashboard()).
  */
@@ -33,94 +36,140 @@ public class LoginFrame extends JFrame {
 
     private final JTextField emailField = new JTextField(22);
     private final JPasswordField passwordField = new JPasswordField(22);
-    private final JLabel messageLabel = new JLabel(" ");
+    private final JLabel messageLabel = new JLabel(" ", SwingConstants.CENTER);
 
     private final AuthenticationService authService = new AuthenticationService();
 
     public LoginFrame() {
-        setTitle("Java-Based Online Quiz Platform - Login");
-        setSize(560, 480);
-        setMinimumSize(new Dimension(520, 440));
+        setTitle("Java-Based Online Quiz Platform - Sign In");
+        setSize(580, 520);
+        setMinimumSize(new Dimension(540, 480));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+        getContentPane().setBackground(UIUtil.BACKGROUND);
 
+        add(buildHeader(), BorderLayout.NORTH);
+        add(buildForm(), BorderLayout.CENTER);
+        add(buildFooter(), BorderLayout.SOUTH);
+    }
+
+    private JPanel buildHeader() {
         JPanel header = new JPanel();
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
         header.setBackground(UIUtil.PRIMARY);
-        header.setBorder(BorderFactory.createEmptyBorder(24, 20, 24, 20));
+        header.setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
+
         JLabel title = new JLabel("Java-Based Online Quiz Platform");
         title.setFont(UIUtil.titleFont());
         title.setForeground(Color.WHITE);
-        JLabel subtitle = new JLabel("Sign in with your email and password");
+
+        JLabel subtitle = new JLabel("Sign in to access your dashboard, quizzes, and performance analytics");
         subtitle.setFont(UIUtil.smallFont());
-        subtitle.setForeground(new Color(200, 220, 240));
-        header.setLayout(new javax.swing.BoxLayout(header, javax.swing.BoxLayout.Y_AXIS));
+        subtitle.setForeground(new Color(0x94, 0xA3, 0xB8));
+
         header.add(title);
+        header.add(Box.createVerticalStrut(4));
         header.add(subtitle);
-        add(header, BorderLayout.NORTH);
-
-        add(buildForm(), BorderLayout.CENTER);
-
-        messageLabel.setFont(UIUtil.smallFont());
-        messageLabel.setForeground(UIUtil.DANGER);
-        messageLabel.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
-        add(messageLabel, BorderLayout.SOUTH);
+        return header;
     }
 
     private JPanel buildForm() {
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBackground(Color.WHITE);
-        form.setBorder(BorderFactory.createEmptyBorder(30, 60, 20, 60));
+        JPanel wrapper = new JPanel(new GridBagLayout());
+        wrapper.setBackground(UIUtil.BACKGROUND);
+        wrapper.setBorder(BorderFactory.createEmptyBorder(20, 30, 10, 30));
+
+        JPanel card = new JPanel(new GridBagLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIUtil.BORDER, 1),
+                BorderFactory.createEmptyBorder(24, 30, 24, 30)));
+
         GridBagConstraints gc = new GridBagConstraints();
-        gc.insets = new Insets(8, 6, 8, 6);
+        gc.insets = new Insets(8, 8, 8, 8);
         gc.anchor = GridBagConstraints.WEST;
 
         gc.gridx = 0;
         gc.gridy = 0;
-        form.add(UIUtil.fieldLabel("Email:"), gc);
+        card.add(UIUtil.fieldLabel("Email Address:"), gc);
         gc.gridx = 1;
-        form.add(emailField, gc);
+        emailField.setFont(UIUtil.normalFont());
+        emailField.setPreferredSize(new Dimension(240, 34));
+        card.add(emailField, gc);
 
         gc.gridx = 0;
         gc.gridy = 1;
-        form.add(UIUtil.fieldLabel("Password:"), gc);
+        card.add(UIUtil.fieldLabel("Password:"), gc);
         gc.gridx = 1;
-        form.add(passwordField, gc);
+        passwordField.setFont(UIUtil.normalFont());
+        passwordField.setPreferredSize(new Dimension(240, 34));
+        card.add(passwordField, gc);
 
-        JButton loginButton = UIUtil.primaryButton("Login");
-        JButton registerButton = UIUtil.neutralButton("Register");
-        JButton exitButton = UIUtil.dangerButton("Exit");
+        JButton loginButton = UIUtil.primaryButton("Sign In");
+        JButton registerButton = UIUtil.successButton("Register");
+        JButton exitButton = UIUtil.neutralButton("Exit");
 
         gc.gridx = 0;
         gc.gridy = 2;
         gc.gridwidth = 2;
         gc.anchor = GridBagConstraints.CENTER;
-        gc.insets = new Insets(18, 6, 6, 6);
+        gc.insets = new Insets(18, 6, 8, 6);
+
         JPanel buttons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 12, 0));
         buttons.setBackground(Color.WHITE);
         buttons.add(loginButton);
         buttons.add(registerButton);
         buttons.add(exitButton);
-        form.add(buttons, gc);
+        card.add(buttons, gc);
 
-        JLabel hint = new JLabel("<html><center>Demo accounts:<br>"
-                + "admin@quiz.com / admin123 &nbsp; | &nbsp; creator@quiz.com / creator123<br>"
-                + "student@quiz.com / student123</center></html>");
-        hint.setFont(UIUtil.smallFont());
-        hint.setForeground(Color.GRAY);
+        JPanel hintCard = new JPanel();
+        hintCard.setLayout(new BoxLayout(hintCard, BoxLayout.Y_AXIS));
+        hintCard.setBackground(new Color(0xF8, 0xFA, 0xFC));
+        hintCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIUtil.BORDER, 1),
+                BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+
+        JLabel hintTitle = new JLabel("Demo Accounts:");
+        hintTitle.setFont(UIUtil.smallBoldFont());
+        hintTitle.setForeground(UIUtil.TEXT);
+
+        JLabel hintText = new JLabel("<html>Admin: <b>admin@quiz.com</b> / admin123 &nbsp;|&nbsp; "
+                + "Creator: <b>creator@quiz.com</b> / creator123<br>"
+                + "Participant: <b>student@quiz.com</b> / student123</html>");
+        hintText.setFont(UIUtil.smallFont());
+        hintText.setForeground(UIUtil.TEXT_MUTED);
+
+        hintCard.add(hintTitle);
+        hintCard.add(Box.createVerticalStrut(2));
+        hintCard.add(hintText);
+
         gc.gridy = 3;
-        gc.insets = new Insets(20, 6, 6, 6);
-        form.add(hint, gc);
+        gc.insets = new Insets(16, 6, 4, 6);
+        card.add(hintCard, gc);
 
-        // action listeners
+        wrapper.add(card);
+
+        // Action listeners
         loginButton.addActionListener(e -> performLogin());
-        passwordField.addActionListener(e -> performLogin());   // Enter key
+        passwordField.addActionListener(e -> performLogin());
         registerButton.addActionListener(e -> {
             new RegisterFrame(this).setVisible(true);
             setVisible(false);
         });
         exitButton.addActionListener(e -> System.exit(0));
-        return form;
+
+        return wrapper;
+    }
+
+    private JPanel buildFooter() {
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setBackground(UIUtil.BACKGROUND);
+        footer.setBorder(BorderFactory.createEmptyBorder(0, 20, 12, 20));
+
+        messageLabel.setFont(UIUtil.smallBoldFont());
+        messageLabel.setForeground(UIUtil.DANGER);
+        footer.add(messageLabel, BorderLayout.CENTER);
+        return footer;
     }
 
     private void performLogin() {
@@ -129,7 +178,6 @@ public class LoginFrame extends JFrame {
         String password = new String(passwordField.getPassword());
 
         try {
-            // try / catch / throws with CUSTOM EXCEPTIONS
             User user = authService.login(email, password);
 
             // Demonstrates RUNTIME POLYMORPHISM:
@@ -139,16 +187,13 @@ public class LoginFrame extends JFrame {
             dispose();
 
         } catch (InvalidLoginException e) {
-            messageLabel.setText(e.getMessage());                 // meaningful error message
-            JOptionPaneError(e.getMessage());
+            messageLabel.setText(e.getMessage());
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Sign In Failed", JOptionPane.ERROR_MESSAGE);
         } catch (DatabaseException e) {
-            messageLabel.setText("Database unavailable - check MySQL and config.properties.");
-            JOptionPaneError(e.getMessage());
+            messageLabel.setText("Database unavailable - check MySQL connection.");
+            JOptionPane.showMessageDialog(this,
+                    "Database connection failure:\n" + e.getMessage() + "\nPlease check config.properties.",
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
         }
-    }
-
-    private void JOptionPaneError(String message) {
-        javax.swing.JOptionPane.showMessageDialog(this, message, "Login failed",
-                javax.swing.JOptionPane.ERROR_MESSAGE);
     }
 }

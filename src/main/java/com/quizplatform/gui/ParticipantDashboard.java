@@ -10,10 +10,14 @@ import com.quizplatform.service.QuizService;
 import com.quizplatform.service.ResultService;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.util.HashMap;
@@ -21,11 +25,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Participant dashboard - navigation:
- * Dashboard | Available Quizzes | My Attempts | Performance | Profile | Logout
- *
- * Also coordinates the participant screens:
- * startQuiz() -> QuizAttemptPanel, showResult() -> ResultPanel.
+ * Modern participant dashboard.
+ * Navigation:
+ * Dashboard | Available Quizzes | My Attempts | Performance | Profile
  */
 public class ParticipantDashboard extends DashboardFrame {
 
@@ -46,7 +48,7 @@ public class ParticipantDashboard extends DashboardFrame {
     private final JLabel statBest = statValue();
 
     public ParticipantDashboard(Participant participant) {
-        super(participant, "Participant Dashboard");
+        super(participant, "Participant Learning Portal");
         this.participant = participant;
 
         quizSelectionPanel = new QuizSelectionPanel(this, participant);
@@ -64,38 +66,32 @@ public class ParticipantDashboard extends DashboardFrame {
         addCard("performance", performancePanel);
         addCard("profile", profilePanel);
 
-        addSidebarButton(createNavButton("Dashboard", "home"));
-        addSidebarButton(createNavButton("Available Quizzes", "quizzes"));
-        addSidebarButton(createNavButton("My Attempts", "attempts"));
-        addSidebarButton(createNavButton("Performance", "performance"));
-        addSidebarButton(createNavButton("Profile", "profile"));
-        addSidebarButton(createLogoutButton());
+        addSidebarButton(createNavButton("📊 Dashboard", "home"));
+        addSidebarButton(createNavButton("📝 Available Quizzes", "quizzes"));
+        addSidebarButton(createNavButton("📜 My Attempts", "attempts"));
+        addSidebarButton(createNavButton("📈 Performance Analysis", "performance"));
+        addSidebarButton(createNavButton("👤 Student Profile", "profile"));
 
         showCard("home");
         refreshStatistics();
     }
 
-    // ---- navigation helpers used by the child panels ----
-
-    /** Switches to the quiz attempt screen (the timer starts there). */
     public void startQuiz(Quiz quiz) {
         attemptPanel.prepareQuiz(quiz);
         showCard("attempt");
     }
 
-    /** Shows the result screen after a submission (called by QuizAttemptPanel). */
     public void showResult(Result result, Quiz quiz, List<Question> questions, Map<Integer, Long> selected) {
         resultPanel.showResult(result, quiz, questions, selected);
         showCard("result");
     }
 
-    /** Loads a stored attempt from the database and opens its detail view. */
     public void openHistoryDetail(Result result) {
         try {
             Quiz quiz = quizService.getQuizById(result.getQuizId());
             List<Question> questions = quizService.getQuestionsForQuiz(result.getQuizId());
             List<Answer> storedAnswers = resultService.getAnswersByAttempt(result.getAttemptId());
-            Map<Integer, Long> selected = new HashMap<>();     // Demonstrates Java Collections: Map
+            Map<Integer, Long> selected = new HashMap<>();
             for (Answer answer : storedAnswers) {
                 selected.put(answer.getQuestionId(), answer.getSelectedOptionId());
             }
@@ -106,7 +102,6 @@ public class ParticipantDashboard extends DashboardFrame {
         }
     }
 
-    /** Refreshes the statistics shown on the home card. */
     public void refreshStatistics() {
         try {
             int available = quizService.getApprovedQuizzes().size();
@@ -118,6 +113,7 @@ public class ParticipantDashboard extends DashboardFrame {
             statAttempts.setText(String.valueOf(history.size()));
             statAverage.setText(String.format("%.1f%%", average));
             statBest.setText(String.format("%.1f%%", best));
+            setStatus("Ready");
         } catch (DatabaseException e) {
             setStatus("Statistics unavailable: " + e.getMessage());
         }
@@ -126,39 +122,62 @@ public class ParticipantDashboard extends DashboardFrame {
     private JLabel statValue() {
         JLabel label = new JLabel("-");
         label.setFont(new Font("Segoe UI", Font.BOLD, 30));
-        label.setForeground(UIUtil.ACCENT);
-        label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        label.setForeground(UIUtil.TEXT);
         return label;
     }
 
-    private JPanel statCard(String caption, JLabel value) {
-        JPanel card = new JPanel(new GridLayout(2, 1));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 224, 228)),
-                BorderFactory.createEmptyBorder(18, 10, 18, 10)));
-        card.add(value);
-        JLabel captionLabel = new JLabel(caption, javax.swing.SwingConstants.CENTER);
-        captionLabel.setFont(UIUtil.smallFont());
-        captionLabel.setForeground(UIUtil.TEXT);
-        card.add(captionLabel);
-        return card;
-    }
-
     private JPanel buildHomePanel() {
-        JPanel home = new JPanel(new BorderLayout(0, 8));
+        JPanel home = new JPanel(new BorderLayout(0, 16));
         home.setBackground(UIUtil.BACKGROUND);
-        home.setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24));
-        home.add(UIUtil.heading("Welcome, " + participant.getName()
-                + " - here is your performance overview"), BorderLayout.NORTH);
+        home.setBorder(BorderFactory.createEmptyBorder(22, 24, 22, 24));
 
+        // Top Welcome Banner
+        JPanel banner = new JPanel(new BorderLayout());
+        banner.setBackground(Color.WHITE);
+        banner.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIUtil.BORDER, 1),
+                BorderFactory.createEmptyBorder(18, 22, 18, 22)));
+
+        JPanel bannerText = new JPanel();
+        bannerText.setLayout(new BoxLayout(bannerText, BoxLayout.Y_AXIS));
+        bannerText.setBackground(Color.WHITE);
+
+        JLabel welcome = new JLabel("Welcome back, " + participant.getName() + " 👋");
+        welcome.setFont(UIUtil.titleFont());
+        welcome.setForeground(UIUtil.TEXT);
+
+        JLabel sub = new JLabel("Test your Java knowledge with timed evaluations, instant scoring, and detailed review.");
+        sub.setFont(UIUtil.normalFont());
+        sub.setForeground(UIUtil.TEXT_MUTED);
+
+        bannerText.add(welcome);
+        bannerText.add(Box.createVerticalStrut(4));
+        bannerText.add(sub);
+        banner.add(bannerText, BorderLayout.WEST);
+
+        JPanel btnWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
+        btnWrap.setBackground(Color.WHITE);
+
+        JButton takeQuizBtn = UIUtil.primaryButton("▶ Take a Quiz Now");
+        takeQuizBtn.addActionListener(e -> showCard("quizzes"));
+        btnWrap.add(takeQuizBtn);
+
+        JButton refreshBtn = UIUtil.secondaryButton("Refresh");
+        refreshBtn.addActionListener(e -> refreshStatistics());
+        btnWrap.add(refreshBtn);
+
+        banner.add(btnWrap, BorderLayout.EAST);
+        home.add(banner, BorderLayout.NORTH);
+
+        // Grid of 4 Metric cards
         JPanel grid = new JPanel(new GridLayout(1, 4, 16, 16));
         grid.setBackground(UIUtil.BACKGROUND);
-        grid.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
-        grid.add(statCard("Available Quizzes", statQuizzes));
-        grid.add(statCard("My Attempts", statAttempts));
-        grid.add(statCard("Average Score", statAverage));
-        grid.add(statCard("Best Score", statBest));
+
+        grid.add(UIUtil.metricCard("AVAILABLE QUIZZES", statQuizzes, "Approved for testing", UIUtil.PRIMARY_LIGHT));
+        grid.add(UIUtil.metricCard("MY ATTEMPTS", statAttempts, "Completed evaluations", UIUtil.ACCENT));
+        grid.add(UIUtil.metricCard("AVERAGE SCORE", statAverage, "Overall platform average", UIUtil.WARNING));
+        grid.add(UIUtil.metricCard("BEST SCORE", statBest, "Highest achieved score", UIUtil.SUCCESS));
+
         home.add(grid, BorderLayout.CENTER);
         return home;
     }

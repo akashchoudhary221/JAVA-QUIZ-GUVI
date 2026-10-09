@@ -6,18 +6,20 @@ import com.quizplatform.model.Result;
 import com.quizplatform.service.ResultService;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.util.List;
 
 /**
- * Participant: aggregated performance view
- * (total attempts, average %, best %, passed/failed using the
- *  "pass_percentage" system setting).
+ * Participant: aggregated performance analytics view
+ * (total attempts, average %, best %, passed/failed evaluations).
  */
 public class PerformancePanel extends JPanel {
 
@@ -31,47 +33,48 @@ public class PerformancePanel extends JPanel {
 
     public PerformancePanel(Participant participant) {
         this.participantId = participant.getId();
-        setLayout(new BorderLayout(0, 12));
+        setLayout(new BorderLayout(0, 16));
         setBackground(UIUtil.BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+        setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
 
-        add(UIUtil.heading("My Performance - Overall Statistics"), BorderLayout.NORTH);
+        JPanel top = new JPanel(new BorderLayout());
+        top.setBackground(UIUtil.BACKGROUND);
+
+        JPanel titles = new JPanel(new BorderLayout(0, 2));
+        titles.setBackground(UIUtil.BACKGROUND);
+        titles.add(UIUtil.heading("Academic Performance Summary"), BorderLayout.NORTH);
+        titles.add(UIUtil.mutedLabel("Aggregated assessment metrics calculated across all your submitted evaluations"), BorderLayout.SOUTH);
+        top.add(titles, BorderLayout.WEST);
+
+        JButton refreshBtn = UIUtil.secondaryButton("🔄 Refresh Metrics");
+        refreshBtn.addActionListener(e -> refresh());
+        JPanel btnWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        btnWrap.setBackground(UIUtil.BACKGROUND);
+        btnWrap.add(refreshBtn);
+        top.add(btnWrap, BorderLayout.EAST);
+
+        add(top, BorderLayout.NORTH);
 
         JPanel grid = new JPanel(new GridLayout(2, 2, 16, 16));
         grid.setBackground(UIUtil.BACKGROUND);
-        grid.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
-        grid.add(card("Total Attempts", attemptsValue));
-        grid.add(card("Average Percentage", averageValue));
-        grid.add(card("Best Percentage", bestValue));
-        grid.add(card("Attempts with >= 60%", passedValue));
-        add(grid, BorderLayout.CENTER);
 
+        grid.add(UIUtil.metricCard("TOTAL QUIZ ATTEMPTS", attemptsValue, "Completed quizzes submitted", UIUtil.PRIMARY_LIGHT));
+        grid.add(UIUtil.metricCard("AVERAGE PERCENTAGE", averageValue, "Mean percentage across attempts", UIUtil.ACCENT));
+        grid.add(UIUtil.metricCard("HIGHEST SCORE (BEST)", bestValue, "Peak score achieved so far", UIUtil.SUCCESS));
+        grid.add(UIUtil.metricCard("PASSED ATTEMPTS (>= 60%)", passedValue, "Quizzes meeting graduation threshold", UIUtil.WARNING));
+
+        add(grid, BorderLayout.CENTER);
         refresh();
     }
 
     private JLabel big() {
-        JLabel label = new JLabel("-");
-        label.setFont(new Font("Segoe UI", Font.BOLD, 34));
-        label.setForeground(UIUtil.ACCENT);
-        label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        JLabel label = new JLabel("-", SwingConstants.LEFT);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        label.setForeground(UIUtil.TEXT);
         return label;
     }
 
-    private JPanel card(String caption, JLabel value) {
-        JPanel card = new JPanel(new GridLayout(2, 1));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 224, 228)),
-                BorderFactory.createEmptyBorder(24, 10, 24, 10)));
-        card.add(value);
-        JLabel label = new JLabel(caption, javax.swing.SwingConstants.CENTER);
-        label.setFont(UIUtil.normalFont());
-        label.setForeground(UIUtil.TEXT);
-        card.add(label);
-        return card;
-    }
-
-    /** Recomputes all values from the participant's stored results (JDBC). */
+    /** Recomputes values from the participant's stored results in MySQL. */
     public void refresh() {
         try {
             List<Result> results = resultService.getHistory(participantId);
@@ -85,9 +88,7 @@ public class PerformancePanel extends JPanel {
             passedValue.setText(String.valueOf(passed));
         } catch (DatabaseException e) {
             attemptsValue.setText("!");
-            javax.swing.JOptionPane.showMessageDialog(this,
-                    "Could not load performance data:\n" + e.getMessage(),
-                    "Database error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            UIUtil.error(this, "Could not load performance data:\n" + e.getMessage());
         }
     }
 }

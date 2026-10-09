@@ -15,14 +15,15 @@ import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 
 /**
- * Admin screen: platform configuration
- * (quiz defaults, timer settings, platform name, pass percentage).
- * Data lives in the system_settings table (SystemSettingsDAO).
+ * Admin screen: Platform configuration settings
+ * (default duration, pass percentage, timer toggle, platform name).
  */
 public class SystemSettingsPanel extends JPanel {
 
@@ -32,17 +33,17 @@ public class SystemSettingsPanel extends JPanel {
     private final JTextField valueField = new JTextField(20);
 
     private final DefaultTableModel tableModel =
-            UIUtil.emptyModel("Setting Key", "Value", "Description");
+            UIUtil.emptyModel("Configuration Key", "Setting Value", "System Description");
     private final JTable table = UIUtil.readOnlyTable(tableModel);
 
     public SystemSettingsPanel() {
-        setLayout(new BorderLayout(0, 12));
+        setLayout(new BorderLayout(0, 14));
         setBackground(UIUtil.BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+        setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
 
-        add(buildForm(), BorderLayout.NORTH);
+        add(buildHeader(), BorderLayout.NORTH);
         add(new JScrollPane(table), BorderLayout.CENTER);
-        add(buildButtons(), BorderLayout.SOUTH);
+        add(buildFormAndButtons(), BorderLayout.SOUTH);
 
         table.getSelectionModel().addListSelectionListener(e -> {
             int row = table.getSelectedRow();
@@ -54,69 +55,87 @@ public class SystemSettingsPanel extends JPanel {
         refreshTable();
     }
 
-    private JPanel buildForm() {
-        JPanel wrapper = new JPanel(new BorderLayout(0, 8));
-        wrapper.setBackground(UIUtil.BACKGROUND);
-        wrapper.add(UIUtil.heading("System Settings"), BorderLayout.NORTH);
+    private JPanel buildHeader() {
+        JPanel top = new JPanel(new BorderLayout(0, 2));
+        top.setBackground(UIUtil.BACKGROUND);
+        top.add(UIUtil.heading("Global System Settings"), BorderLayout.NORTH);
+        top.add(UIUtil.mutedLabel("Configure default platform behaviors, timer limits, pass thresholds, and branding"), BorderLayout.SOUTH);
+        return top;
+    }
 
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBackground(Color.WHITE);
-        form.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 224, 228)),
-                BorderFactory.createEmptyBorder(12, 14, 12, 14)));
+    private JPanel buildFormAndButtons() {
+        JPanel container = new JPanel(new BorderLayout(0, 10));
+        container.setBackground(UIUtil.BACKGROUND);
+
+        JPanel formCard = new JPanel(new GridBagLayout());
+        formCard.setBackground(Color.WHITE);
+        formCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIUtil.BORDER, 1),
+                BorderFactory.createEmptyBorder(14, 18, 14, 18)));
+
         GridBagConstraints gc = new GridBagConstraints();
-        gc.insets = new Insets(5, 6, 5, 6);
+        gc.insets = new Insets(6, 8, 6, 8);
         gc.anchor = GridBagConstraints.WEST;
 
         gc.gridx = 0;
         gc.gridy = 0;
-        form.add(UIUtil.fieldLabel("Setting Key:"), gc);
+        formCard.add(UIUtil.fieldLabel("Setting Key:"), gc);
         gc.gridx = 1;
-        form.add(keyField, gc);
-        gc.gridx = 2;
-        form.add(UIUtil.fieldLabel("Value:"), gc);
-        gc.gridx = 3;
-        form.add(valueField, gc);
+        keyField.setFont(UIUtil.normalFont());
+        keyField.setPreferredSize(new Dimension(220, 32));
+        formCard.add(keyField, gc);
 
-        JLabel hint = new JLabel("<html><small>Keys: default_duration_minutes | timer_enabled | "
-                + "pass_percentage | platform_name</small></html>");
-        hint.setFont(UIUtil.smallFont());
-        hint.setForeground(Color.GRAY);
+        gc.gridx = 2;
+        formCard.add(UIUtil.fieldLabel("Value:"), gc);
+        gc.gridx = 3;
+        valueField.setFont(UIUtil.normalFont());
+        valueField.setPreferredSize(new Dimension(220, 32));
+        formCard.add(valueField, gc);
+
+        JLabel hint = new JLabel("<html><small style='color: #64748B;'>Select any setting in the table above to populate the form for updating.</small></html>");
         gc.gridx = 0;
         gc.gridy = 1;
         gc.gridwidth = 4;
-        form.add(hint, gc);
+        formCard.add(hint, gc);
 
-        wrapper.add(form, BorderLayout.CENTER);
-        return wrapper;
-    }
+        container.add(formCard, BorderLayout.CENTER);
 
-    private JPanel buildButtons() {
-        JPanel panel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
-        panel.setBackground(UIUtil.BACKGROUND);
-        JButton save = UIUtil.successButton("Save Setting");
-        JButton clear = UIUtil.neutralButton("Clear");
-        JButton refresh = UIUtil.primaryButton("Refresh");
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        buttons.setBackground(UIUtil.BACKGROUND);
+
+        JButton save = UIUtil.successButton("💾 Save Setting");
+        JButton clear = UIUtil.secondaryButton("Clear");
+        JButton refresh = UIUtil.secondaryButton("Refresh");
+
         save.addActionListener(e -> saveSetting());
         clear.addActionListener(e -> {
             keyField.setText("");
             valueField.setText("");
         });
         refresh.addActionListener(e -> refreshTable());
-        panel.add(save);
-        panel.add(clear);
-        panel.add(refresh);
-        return panel;
+
+        buttons.add(save);
+        buttons.add(clear);
+        buttons.add(refresh);
+        container.add(buttons, BorderLayout.SOUTH);
+
+        return container;
     }
 
     private void saveSetting() {
+        String key = keyField.getText().trim();
+        String val = valueField.getText().trim();
+        if (key.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Setting key cannot be empty.", "Input Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         try {
-            settingsService.updateSetting(keyField.getText(), valueField.getText());
-            JOptionPane.showMessageDialog(this, "Setting saved.", "Success",
+            settingsService.updateSetting(key, val);
+            JOptionPane.showMessageDialog(this, "Setting '" + key + "' updated successfully.", "Success",
                     JOptionPane.INFORMATION_MESSAGE);
             refreshTable();
         } catch (DatabaseException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), "Save failed",
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Save Failed",
                     JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -125,12 +144,15 @@ public class SystemSettingsPanel extends JPanel {
         try {
             tableModel.setRowCount(0);
             for (SystemSetting setting : settingsService.getAllSettings()) {
-                tableModel.addRow(new Object[]{setting.getKey(), setting.getValue(),
-                        setting.getDescription() == null ? "" : setting.getDescription()});
+                tableModel.addRow(new Object[]{
+                        setting.getKey(),
+                        setting.getValue(),
+                        setting.getDescription() == null ? "" : setting.getDescription()
+                });
             }
         } catch (DatabaseException e) {
             JOptionPane.showMessageDialog(this, "Could not load settings:\n" + e.getMessage(),
-                    "Database error", JOptionPane.ERROR_MESSAGE);
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

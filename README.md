@@ -1,388 +1,216 @@
-
 # Java-Based Online Quiz Platform
 
-An academic **Java** project that implements a complete online quiz platform for Java
-programming: participants take **timed quizzes**, receive **scores and feedback** and
-review their **performance reports**, quiz creators build and submit quizzes, and
-administrators manage users, quiz approvals and platform settings.
+An enterprise-grade academic **Java** project implementing a comprehensive online quiz platform for Java programming education: participants take **timed quizzes** with an interactive question navigation palette, receive **real-time scores and analytics**, and review their **performance reports**; quiz creators author questions, manage options, and submit quizzes; and administrators govern users, quiz approvals, system settings, and platform reports.
 
-> **Java is the primary technology throughout** - Core Java, OOP, Swing GUI, Java
-> Servlets, JDBC and MySQL. There is **no React, Next.js, Node.js, Express, Python or
-> PHP** anywhere in this project.
+> **100% Java Stack Throughout** &mdash; Core Java (Java 17/21), OOP Design, Swing GUI with FlatLaf Modern Look & Feel, Java Servlets (Jakarta/Javax), Direct JDBC, and MySQL. There is **no React, Next.js, Node.js, Express, Python, or PHP** anywhere in this project.
 
 ---
 
-## 🚀 Quick start — run on MySQL + Tomcat (production)
+## 🚀 Quick Start — Desktop Swing Application
 
-> **Automated scripts provided. Full step-by-step guide: [`docs/PRODUCTION_DEPLOYMENT.md`](docs/PRODUCTION_DEPLOYMENT.md)**
+Requirements: Java 17+, MySQL Server 8.x running, Maven 3.8+.
 
-1. Install **MySQL** + **Tomcat 9** (one time — see the doc for links).
-2. Load the DB:  `powershell -ExecutionPolicy Bypass -File scripts\init-mysql.ps1 -MySqlBin "C:\Program Files\MySQL\MySQL Server 8.0\bin" -User root`
-3. Set your password in `src/main/resources/config.properties`.
-4. Build + deploy:  `powershell -ExecutionPolicy Bypass -File scripts\deploy-tomcat.ps1 -TomcatHome "C:\Program Files\Apache Software Foundation\Tomcat 9.0"`
-5. Open `http://localhost:8080/java-quiz-platform` and log in.
-
----
-
-## 1. Project Objective
-## 1. Project Objective
-
-Create an online quiz platform where:
-
-| Role | What they can do |
-|------|------------------|
-| **ADMIN** | Login, create/update/delete users, assign roles, view all users, approve/reject submitted quizzes, view quiz details, manage system settings, view platform statistics |
-| **QUIZ CREATOR** | Login, create quizzes, add/edit/delete questions, set duration/title/options/correct answers/marks, submit quizzes for admin approval, view quiz status, review participant results, give feedback |
-| **PARTICIPANT** | Register/login, view approved quizzes, start a **timed** quiz, navigate between questions, submit (or auto-submit at 00:00), view score/percentage/correct-incorrect answers/feedback, review previous attempts |
-
----
-
-## 2. Features
-
-* Three roles with **role-based access control** (Swing + Servlet sessions)
-* **Timed quizzes** with a dedicated Java countdown thread and auto-submission at 00:00
-* Full quiz lifecycle: `DRAFT -> PENDING_APPROVAL -> APPROVED / REJECTED`
-* Score calculation (marks, percentage, correct/incorrect, automatic feedback)
-* Question-wise performance review + detailed performance report
-* Performance history in a `JTable`
-* Creator/Admin feedback for participants
-* SHA-256 password hashing (never store plain text passwords)
-* Platform statistics dashboards (users, quizzes, pending, attempts)
-* Web module (Java Servlets): login, quiz attempt, results, admin console
+1. **Initialize Database** (MySQL):
+   ```sql
+   mysql -u root -p < database/schema.sql
+   mysql -u root -p < database/sample_data.sql
+   ```
+2. **Verify Database Credentials**:
+   Inspect or edit `src/main/resources/config.properties`:
+   ```properties
+   db.driver=com.mysql.cj.jdbc.Driver
+   db.url=jdbc:mysql://localhost:3306/java_quiz_platform?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+   db.user=root
+   db.password=root
+   ```
+3. **Launch the Swing Application**:
+   ```powershell
+   mvn compile exec:java
+   ```
 
 ---
 
-## 3. Technologies
+## 🌐 Quick Start — Apache Tomcat Web Module
 
-| Layer | Technology |
-|-------|-----------|
-| Language | Java 17 (works with Java 21 too) |
-| Desktop GUI | Swing (`JFrame`, `JPanel`, `CardLayout`, `JTable`, `JRadioButton`, `JProgressBar`, ...) |
-| Web layer | Java Servlets (`HttpServlet`, `@WebServlet`, `HttpSession`) + plain HTML/CSS |
-| Server | Apache Tomcat 9.x (Servlet 4.0 / `javax.servlet`) |
-| Persistence | **Plain JDBC** (`Connection`, `PreparedStatement`, `ResultSet`, transactions) |
-| Database | MySQL 8.x (`java_quiz_platform`) |
-| Build | Maven (`pom.xml`, WAR packaging) |
-| Tests | JUnit 5 + in-memory H2 (MySQL mode) for the DAO layer |
+1. **Build Deployable WAR**:
+   ```powershell
+   mvn clean package
+   ```
+   This generates `target/java-quiz-platform.war` and executes all unit tests.
+2. **Deploy to Tomcat**:
+   Copy `target/java-quiz-platform.war` to your Apache Tomcat `webapps/` directory.
+3. **Access Web Portal**:
+   Open your browser at:
+   ```
+   http://localhost:8080/java-quiz-platform/
+   ```
 
 ---
 
-## 4. Architecture
+## 1. Project Objectives & Roles
 
+| Role | Core Capabilities |
+|------|-------------------|
+| **ADMINISTRATOR** | Secure sign in, User CRUD management (create, read, update, delete, search filter), role assignment, quiz approval workflow (inspect questions, approve/reject), system settings configuration, platform analytics |
+| **QUIZ CREATOR** | Secure sign in, quiz creation (title, description, duration), question authoring with A-D options and single correct answer, draft state management, submission for admin approval, participant evaluation reviews, personalized student feedback |
+| **PARTICIPANT** | Self-registration & sign in, view approved quizzes, timed test taking with live countdown thread, interactive question navigator palette, auto-submit on timeout, instant scoring & percentage calculation, detailed question-by-question review, attempt history |
+
+---
+
+## 2. Architecture & Design System
+
+### A. Architectural Layers
 ```
-        +---------------------+        +---------------------+
-        |  Swing GUI (frames) |        |  Java Servlets (web)|
-        +----------+----------+        +----------+----------+
-                   |                              |
-                   +-------------+----------------+
-                                 |
-                       +---------v---------+
-                       |   Service layer   |  AuthenticationService, UserService,
-                       | (business rules,  |  QuizService, ScoreService,
-                       |  validations)     |  ResultService, ResultManager(sync)
-                       +---------+---------+
-                                 |
-                       +---------v---------+
-                       |  DAO interfaces   |  UserDAO, QuizDAO, QuestionDAO,
-                       +---------+---------+  OptionDAO, AttemptDAO, ResultDAO,
-                                 |            FeedbackDAO, SystemSettingsDAO
-                       +---------v---------+
-                       |   DAO impl (JDBC) |  PreparedStatement + ResultSet
-                       +---------+---------+
-                                 |
-                       +---------v---------+
-                       |      MySQL        |  java_quiz_platform
-                       +-------------------+
+┌─────────────────────────────────┐       ┌─────────────────────────────────┐
+│     Swing GUI (FlatLaf Look)    │       │     Java Servlets (Web Portal)  │
+└────────────────┬────────────────┘       └────────────────┬────────────────┘
+                 │                                         │
+                 └────────────────────┬────────────────────┘
+                                      │
+                           ┌──────────▼──────────┐
+                           │    Service Layer    │ AuthenticationService, UserService,
+                           │   (Business Logic   │ QuizService, ScoreService,
+                           │  & Validations)     │ ResultService, ResultManager (Sync)
+                           └──────────┬──────────┘
+                                      │
+                           ┌──────────▼──────────┐
+                           │    DAO Layer        │ UserDAO, QuizDAO, QuestionDAO,
+                           │  (Interfaces)       │ OptionDAO, AttemptDAO, ResultDAO,
+                           │                     │ FeedbackDAO, SystemSettingsDAO
+                           └──────────┬──────────┘
+                                      │
+                           ┌──────────▼──────────┐
+                           │  DAO Implementation │ PreparedStatement, ResultSet,
+                           │     (Plain JDBC)    │ Batch Updates, Transactions
+                           └──────────┬──────────┘
+                                      │
+                           ┌──────────▼──────────┐
+                           │   MySQL Database    │ java_quiz_platform
+                           └─────────────────────┘
 ```
 
-* **DAO pattern** - SQL never appears inside a GUI class.
-* **Service layer** - validation + custom exceptions.
-* **Repository pattern** - generic `Repository<T>` used as an in-memory cache.
-* **MVC-style separation** for the Swing screens (model / service / view packages).
+### B. UI/UX Design System Specifications
+Both the Swing desktop client and Servlet web application implement a unified, modern aesthetic:
+- **Primary Color**: Deep Navy (`#172554`) & Dark Navy (`#0F172A`)
+- **Accent Color**: Blue (`#3B82F6`) with hover states (`#2563EB`)
+- **Main Background**: Soft Neutral (`#F5F7FB`)
+- **Content Surfaces**: Pure White (`#FFFFFF`)
+- **Primary Typography**: Dark Slate (`#172033`)
+- **Secondary Typography**: Muted Slate (`#64748B`)
+- **Success State**: Emerald Green (`#10B981`)
+- **Warning State**: Amber (`#F59E0B`)
+- **Danger / Error State**: Coral Red (`#EF4444`)
+- **Borders & Dividers**: Light Neutral Gray (`#E2E8F0`)
 
 ---
 
-## 5. Java Concepts Demonstrated (where to find them)
+## 3. Key UI/UX Screen Improvements
 
-| Concept | Where |
-|---------|-------|
-| **Inheritance** | `User` (abstract) <- `Admin`, `QuizCreator`, `Participant`; also `DashboardFrame` <- 3 dashboards |
-| **Polymorphism** | `user.login(...)` and `user.displayDashboard()` called through a `User` reference; `UserDAOImpl.mapRow()` builds the concrete class from the role column |
-| **Interfaces** | `Authenticatable`, `UserOperations`, `QuizOperations`, `ResultOperations` + all `*DAO` interfaces |
-| **Abstract classes** | `User` (abstract `displayDashboard()` / `getDashboardName()`) |
-| **Exception handling** | 6 custom checked exceptions + `try/catch/finally/throw/throws`, no empty catch blocks |
-| **Collections** | `List<Question>`, `List<Quiz>`, `List<Result>`, `Map<Integer,Question>`, `Set`-style dedupe checks |
-| **Generics** | `Repository<T>` (`Repository<Quiz>`, `Repository<Question>`, `Repository<Result>`), generic DAOs |
-| **Multithreading** | `QuizTimer implements Runnable`, `Thread.sleep(1000)`, `interrupt()`, daemon thread |
-| **Swing threading** | `SwingUtilities.invokeLater()` for every timer-driven UI update |
-| **Synchronization** | `ResultManager.saveResult()` synchronized (EDT + timer thread), synchronized `Repository` methods |
-| **JDBC** | `DatabaseConnection`, `PreparedStatement`, `ResultSet`, generated keys, batch insert |
-| **Transactions** | `AttemptDAOImpl.submitAttempt()` - attempt + answers + result commit/rollback |
-| **DAO classes** | 8 interfaces + 8 implementations |
-| **Swing GUI** | 15+ frames/panels with CardLayout navigation |
-| **Servlets** | `LoginServlet`, `QuizServlet`, `ResultServlet`, `AdminServlet` (`doGet`/`doPost`/`HttpSession`) |
+1. **FlatLaf Modern Look & Feel**:
+   - Clean system typography antialiasing and rounded corners (`Button.arc: 8`, `Component.arc: 8`, `ProgressBar.arc: 8`).
+   - Unified color tokens defined in `UIUtil.java`.
 
----
+2. **Dashboard Shell Navigation (`DashboardFrame.java`)**:
+   - Modern sidebar with brand wordmark (`⚡ QuizPlatform`).
+   - **Active Navigation Highlighting**: Clicking any sidebar button highlights the active view in Accent Blue (`#3B82F6`) with bold typography while inactive items remain sleek dark navy.
+   - Header with user profile chip, email, and colored role pill badge.
+   - Distinct red logout action safely invalidating the session.
 
-## 6. Rubric Mapping
+3. **Participant Quiz Experience (`QuizAttemptPanel.java`)**:
+   - **Interactive Question Navigator Palette**: A grid of buttons (`1`, `2`, `3`... `N`) color-coded to show **Answered (Green)**, **Current (Blue)**, and **Unanswered (Gray)**. Clicking any button saves the current selection and jumps instantly.
+   - **Card-Style Radio Options**: Options are enclosed in clean white cards with hover states and a blue border/tint on selection.
+   - **Urgency Countdown Timer**: Header timer badge transitions from blue to amber (< 60s) and danger red (< 30s) before automatic submission.
+   - **Submission Confirmation**: Summarizes total questions, answered count, and unanswered warning before final submission.
 
-### Java GUI rubric
+4. **Result Analytics Hero (`ResultPanel.java`)**:
+   - Large hero percentage badge with `PASSED` (>= 60%) or `NEEDS IMPROVEMENT` status.
+   - Progress bar and KPI metric boxes for Total Questions, Attempted, Correct, Incorrect, and Time Taken.
+   - Question review table featuring color-coded pill badges (`CORRECT`, `WRONG`, `SKIPPED`).
 
-| Marks | Requirement | Proof in code |
-|-------|-------------|---------------|
-| 10 - OOP | Polymorphism | `User user = ...; user.login(...); user.displayDashboard();` (`User`, `Admin`, `QuizCreator`, `Participant`) |
-| 10 - OOP | Inheritance | `Admin extends User` etc. + `DashboardFrame` <- 3 dashboards |
-| 10 - OOP | Exception handling | 6 custom exceptions + `try/catch/finally`, every JDBC failure wrapped in `DatabaseException` |
-| 10 - OOP | Interfaces | `Authenticatable`, `UserOperations`, `QuizOperations`, `ResultOperations`, 8 DAO interfaces |
-| 6 - Collections & Generics | Lists/Maps/Sets | `List<Question>`, `Map<Integer,Question>`, in `ScoreService`, `QuizService`, `ResultManager` |
-| 6 - Collections & Generics | Generic Repository | `Repository<T>` used as `Repository<Quiz>`, `Repository<Question>`, `Repository<Result>` |
-| 4 - Multithreading & Sync | Timer thread | `QuizTimer implements Runnable`; `Thread.sleep`, `interrupt`, daemon thread |
-| 4 - Multithreading & Sync | Synchronization | `ResultManager.saveResult()` is `synchronized` (shared statistics updated by EDT + timer thread) |
-| 7 - Database classes | DAO interfaces | Clean `dao` -> `dao.impl` -> JDBC -> MySQL separation; no SQL inside GUI classes |
-| 7 - Database classes | Connection + Service | `DatabaseConnection` centralizes config; `service` package holds the business logic |
-| 3 - JDBC | Connectivity | `Connection`, `PreparedStatement` everywhere, `ResultSet` row mappers |
-| 3 - JDBC | CRUD + Transactions | Full CRUD on all tables; `AttemptDAOImpl.submitAttempt()` commits attempt+answers+result or rolls back |
+5. **Admin Management Suite (`AdminDashboard.java`, `UserManagementPanel.java`, `QuizManagementPanel.java`)**:
+   - KPI metric cards for Total Users, Total Quizzes, Pending Approval, Approved, and Total Attempts.
+   - Real-time search filter in User Management.
+   - Status badge rendering for quiz states (`APPROVED`, `PENDING_APPROVAL`, `REJECTED`, `DRAFT`).
+   - Comprehensive quiz inspection dialog detailing every question, option, correct answer, and explanation.
 
-### Java Web rubric
-
-| Marks | Requirement | Proof in code |
-|-------|-------------|---------------|
-| 8 - Design | Understanding | Layered design (Servlet -> Service -> DAO -> JDBC -> MySQL) with a common model |
-| 10 - Core Java | Concepts | Same service/DAO code is reused by Swing and Servlets (no duplication) |
-| 8 - JDBC | DB integration | Servlets read/write through the DAO layer only (`QuizServlet`, `ResultServlet`, `AdminServlet`) |
-| 7 - Servlets | Web integration | 4 servlets with `@WebServlet`, `doGet`/`doPost`, `HttpSession` role checks, `/login /quiz /result /admin` |
+6. **Web Servlet Module (`style.css`, `WebPages.java`, `index.html`)**:
+   - Fully responsive layout with sticky header and card surfaces.
+   - Styled forms, tables, and badge pills matching desktop styling.
 
 ---
 
-## 7. Database Setup (MySQL)
+## 4. Complete College Marking Rubric Mapping
 
-```sql
--- 1) create the schema
-mysql -u root -p < database/schema.sql
+### Part A: Java GUI Based Projects (33 Marks Total)
 
--- or inside the mysql client:
-SOURCE database/schema.sql;
-SOURCE database/sample_data.sql;
-```
-
-Tables:
-
-| Table | Purpose |
-|-------|---------|
-| `roles` | ADMIN / QUIZ_CREATOR / PARTICIPANT (referenced by `users.role`) |
-| `users` | Accounts incl. SHA-256 password hashes |
-| `quizzes` | Title, description, duration, marks, status, creator |
-| `questions` | Question text, marks, explanation, quiz FK |
-| `options` | A/B/C/D choices with `is_correct` flag |
-| `quiz_attempts` | One row per participant attempt (start/submit/time/status) |
-| `answers` | Selected option per question (NULL = not answered) |
-| `results` | Calculated score (marks, percentage, feedback) - 1:1 with attempt |
-| `feedback` | Human comments from creators/admins |
-| `system_settings` | Quiz defaults, timer settings, platform configuration |
-
-Relationships (with foreign keys + `ON DELETE CASCADE`):
-
-```
-users ──< quizzes ──< questions ──< options
-  │         │
-  │         └─< quiz_attempts ──< answers
-  └───────────< quiz_attempts ──(1:1)─ results ──< feedback
-```
+| Rubric Criterion | Marks | Proof in Codebase | Exact File & Method Location |
+|------------------|:-----:|-------------------|------------------------------|
+| **OOP: Polymorphism** | 2.5 | `user.displayDashboard()` called polymorphically on base `User` reference opening `AdminDashboard`, `QuizCreatorDashboard`, or `ParticipantDashboard`; `UserDAOImpl.mapRow()` constructs concrete instances based on role. | [LoginFrame.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/gui/LoginFrame.java#L138)<br>[UserDAOImpl.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/dao/impl/UserDAOImpl.java#L156) |
+| **OOP: Inheritance** | 2.5 | `Admin`, `QuizCreator`, and `Participant` extend abstract class `User`; `AdminDashboard`, `QuizCreatorDashboard`, and `ParticipantDashboard` extend `DashboardFrame`. | [Admin.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/model/Admin.java#L8)<br>[Participant.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/model/Participant.java#L8)<br>[DashboardFrame.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/gui/DashboardFrame.java#L29) |
+| **OOP: Exception Handling** | 2.5 | 6 custom checked exceptions (`DatabaseException`, `InvalidLoginException`, `InvalidQuizException`, `InvalidUserException`, `QuizNotFoundException`, `TimeExpiredException`) with full `try-catch-finally-throw-throws` propagation and meaningful user dialogs. | [exception package](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/exception)<br>[AuthenticationService.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/service/AuthenticationService.java#L35) |
+| **OOP: Interfaces** | 2.5 | Core operation interfaces implemented by service and DAO layers (`Authenticatable`, `UserOperations`, `QuizOperations`, `ResultOperations`, 8 DAO interfaces). | [Authenticatable.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/interfaces/Authenticatable.java)<br>[UserOperations.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/interfaces/UserOperations.java)<br>[QuizOperations.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/interfaces/QuizOperations.java) |
+| **Collections & Generics** | 6 | Use of `List<Question>`, `List<Quiz>`, `Map<Integer, Long>` (question answers), and the generic repository `Repository<T>` parameterized as `Repository<Quiz>`, `Repository<Question>`, and `Repository<Result>`. | [Repository.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/repository/Repository.java#L11)<br>[ResultManager.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/service/ResultManager.java#L28)<br>[QuizAttemptPanel.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/gui/QuizAttemptPanel.java#L53) |
+| **Multithreading & Synchronization** | 4 | `QuizTimer implements Runnable` runs on a dedicated background thread counting seconds via `Thread.sleep(1000)` and triggers `onTimeExpired()`. Marshalling to EDT via `SwingUtilities.invokeLater()`. `ResultManager.saveResult()` is `synchronized` to prevent lost updates between manual submit (EDT) and auto-submit (Timer thread). | [QuizTimer.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/timer/QuizTimer.java#L14)<br>[ResultManager.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/service/ResultManager.java#L47)<br>[QuizAttemptPanel.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/gui/QuizAttemptPanel.java#L75) |
+| **Classes for Database Operations** | 7 | Clear architectural segregation between GUI, Service, and DAO interfaces + implementations. No raw SQL inside GUI frames or servlets. | [dao package](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/dao)<br>[dao.impl package](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/dao/impl) |
+| **Database Connectivity using JDBC** | 3 | `DatabaseConnection` reads credentials from classpath `config.properties`, registers MySQL driver, and returns standard `java.sql.Connection`. | [DatabaseConnection.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/database/DatabaseConnection.java#L28) |
+| **JDBC Implementation** | 3 | Full CRUD using `PreparedStatement` (parameter binding against SQL injection), `ResultSet` mapping, generated keys retrieval, batch inserts (`executeBatch`), and multi-table transactional commits/rollbacks. | [AttemptDAOImpl.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/dao/impl/AttemptDAOImpl.java#L46)<br>[UserDAOImpl.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/dao/impl/UserDAOImpl.java#L35) |
 
 ---
 
-## 8. MySQL Configuration
+### Part B: Java Web Based Projects (33 Marks Total)
 
-Copy `config.properties.example` to `src/main/resources/config.properties`
-(there is already a ready-to-use copy in the project) and edit:
-
-```properties
-db.driver=com.mysql.cj.jdbc.Driver
-db.url=jdbc:mysql://localhost:3306/java_quiz_platform?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
-db.user=root
-db.password=root
-```
-
-Credentials are read **only** by `DatabaseConnection` - they are not hardcoded anywhere.
+| Rubric Criterion | Marks | Proof in Codebase | Exact File & Method Location |
+|------------------|:-----:|-------------------|------------------------------|
+| **Problem Understanding & Solution Design** | 8 | End-to-end layered architecture: Servlets handle HTTP requests and delegate business logic to `Service` and `DAO` layers, reusing the domain model. | [QuizServlet.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/servlet/QuizServlet.java#L33)<br>[AdminServlet.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/servlet/AdminServlet.java#L32) |
+| **Core Java Concepts** | 10 | Encapsulation, abstraction, exception hierarchies, stream processing (`.filter()`, `.mapToDouble()`), and secure password hashing (`PasswordUtil`). | [PasswordUtil.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/util/PasswordUtil.java#L21)<br>[ValidationUtil.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/util/ValidationUtil.java#L16) |
+| **Database Integration using JDBC** | 8 | Servlets perform database queries exclusively through the DAO layer, guaranteeing connection pooling, parameter sanitation, and clean connection closures. | [AdminServlet.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/servlet/AdminServlet.java#L105)<br>[ResultServlet.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/servlet/ResultServlet.java#L56) |
+| **Servlets and Web Integration** | 7 | `@WebServlet` annotations, `doGet()` and `doPost()` lifecycle handling, session authorization (`HttpSession.getAttribute("role")`), HTTP status codes (`403 Forbidden`, `400 Bad Request`, `404 Not Found`), and web deployment configuration. | [LoginServlet.java](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/java/com/quizplatform/servlet/LoginServlet.java#L25)<br>[web.xml](file:///c:/Users/manis/OneDrive/Desktop/JAVA-QUIZ-GUVI/src/main/webapp/WEB-INF/web.xml) |
 
 ---
 
-## 9. Maven Build
+## 5. Preconfigured Evaluator Accounts
 
-```powershell
-cd "JAVA QUIZ"
-mvn compile        # compile everything
-mvn test           # 18 unit/integration tests (no MySQL needed)
-mvn package        # builds target\java-quiz-platform.war for Tomcat
-```
-
----
-
-## 10. How to Run the Swing Application
-
-Requirements: Java 17+, MySQL running, database + sample data loaded (steps 7-8).
-
-```powershell
-mvn compile exec:java
-```
-
-The **LoginFrame** opens. Demo flow: admin login -> manage users ->
-approve quiz -> creator login -> create quiz -> participant login -> timed quiz
--> auto-submit -> performance history.
+| Role | Email Address | Password | Permissions & Test Flow |
+|------|---------------|----------|--------------------------|
+| **ADMIN** | `admin@quiz.com` | `admin123` | Inspects dashboard counters, manages users, approves/rejects quiz #4, updates system settings, views all reports |
+| **QUIZ CREATOR** | `creator@quiz.com` | `creator123` | Creates new quizzes, authors questions with options, submits for admin approval, inspects student results, submits feedback |
+| **PARTICIPANT** | `student@quiz.com` | `student123` | Takes timed tests (quizzes 1, 2, 3), navigates via palette, views instant score report, checks performance history |
 
 ---
 
-## 11. How to Deploy the Servlet Module on Tomcat
+## 6. Comprehensive Java Viva Questions & Answers
 
-1. Install **Apache Tomcat 9.x** (supports Servlet 4.0 / `javax.servlet`).
-2. Build the WAR: `mvn package`.
-3. Copy `target\java-quiz-platform.war` into Tomcat's `webapps` folder.
-4. Start Tomcat (`bin\startup.bat`), then open:
+### Q1: How does your project demonstrate Runtime Polymorphism?
+> **Answer**: When a user signs in through `LoginFrame`, the authentication service returns an abstract `User` reference. However, the concrete object instantiated is either an `Admin`, `QuizCreator`, or `Participant` based on the database role. Calling `user.displayDashboard()` polymorphically executes the subclass's overridden implementation, automatically launching the correct dashboard window without rigid `if-else` type checking.
 
-```
-http://localhost:8080/java-quiz-platform/
-```
+### Q2: Why is `ResultManager.saveResult()` synchronized?
+> **Answer**: Quiz submissions can originate from two concurrent threads: (1) manual submission triggered by the user on the Swing Event Dispatch Thread (EDT), or (2) automatic timeout submission triggered by the background `QuizTimer` thread when the countdown hits `00:00`. Because both threads update shared statistics (`totalSubmissions`, `percentageSum`, `bestPercentage`), `synchronized` enforces mutual exclusion, preventing race conditions and lost updates.
 
-5. Pages: `/` (home), `/login`, `/quiz` (list/attempt), `/result` (history),
-   `/admin` (admin only - plain participants get HTTP 403).
-6. The web module uses the **same service/DAO/JDBC layer** as the Swing app
-   (see `LoginServlet`, `QuizServlet`, `ResultServlet`, `AdminServlet`).
+### Q3: Why is `SwingUtilities.invokeLater()` necessary in `QuizTimer`?
+> **Answer**: Java Swing is single-threaded and not thread-safe. All GUI modifications (updating labels, text, buttons) must occur strictly on the Event Dispatch Thread (EDT). Since `QuizTimer` counts down on a separate worker thread (`QuizTimer-Thread`), it marshals its tick and expiry callbacks onto the EDT queue using `SwingUtilities.invokeLater()`, preventing UI freezing or concurrent rendering artifacts.
 
----
+### Q4: How do JDBC transactions guarantee data integrity during quiz submission?
+> **Answer**: In `AttemptDAOImpl.submitAttempt()`, an attempt consists of three related tables: `quiz_attempts`, `answers`, and `results`. We invoke `conn.setAutoCommit(false)` to start a database transaction. If all three inserts succeed, `conn.commit()` is called. If an error occurs anywhere (e.g., database constraint failure), the catch block executes `conn.rollback()`, ensuring the database is never left with orphaned attempts or incomplete answers.
 
-## 12. Default Login Credentials
+### Q5: Why do you use `PreparedStatement` instead of `Statement`?
+> **Answer**: `PreparedStatement` precompiles SQL statements and binds inputs using positional parameters (`?`). This separates query code from user data, neutralizing SQL Injection vulnerabilities. Furthermore, for bulk operations like inserting student answers, `PreparedStatement.addBatch()` and `executeBatch()` optimize performance by minimizing network round-trips.
 
-| Role | Email | Password |
-|------|-------|----------|
-| Administrator | admin@quiz.com | admin123 |
-| Quiz Creator | creator@quiz.com | creator123 |
-| Participant | student@quiz.com | student123 |
+### Q6: How is password security implemented without external frameworks?
+> **Answer**: In `PasswordUtil.java`, we utilize Java's standard cryptographic API (`java.security.MessageDigest`). Passwords are never stored or transmitted in plain text. When a user registers or updates their password, a SHA-256 digest is generated, converted to a 64-character hexadecimal string, and stored in the MySQL `password` column. Login validation hashes the entered password and compares the hashes.
 
-Sample quizzes: 3 approved quizzes (OOP, Collections/Threads, JDBC/Servlets)
-+ 1 pending quiz for the approval demo + 2 sample attempts of the student.
+### Q7: What role does the Generic Repository pattern play in your application?
+> **Answer**: `Repository<T>` in `com.quizplatform.repository` is a generic in-memory repository parameterized with type `T`. It provides reusable CRUD and query operations (`add`, `findById`, `findAll`, `delete`) using an internal `Map<Integer, T>`. It is reused as `Repository<Quiz>`, `Repository<Question>`, and `Repository<Result>`, demonstrating Java Generics and eliminating duplicate collection handling code.
+
+### Q8: How does your Servlet module achieve role-based access control?
+> **Answer**: When a user authenticates via `LoginServlet`, their role string (`ADMIN`, `QUIZ_CREATOR`, `PARTICIPANT`) is stored in the `HttpSession`. In `AdminServlet`, the `requireAdmin()` helper method verifies `session.getAttribute("role")`. If a participant attempts to access `/admin`, the servlet sends `HttpServletResponse.SC_FORBIDDEN` (HTTP 403), protecting administrative endpoints on the web layer.
 
 ---
 
-## 13. Folder Structure
+## 7. Build & Verification Checklist
 
-```
-JAVA QUIZ/
-├── pom.xml                                Maven build (WAR, Java 17, MySQL, servlet, JUnit, H2)
-├── README.md                              this file
-├── config.properties.example              copy template for DB credentials
-├── database/
-│   ├── schema.sql                         full MySQL schema (10 tables, PKs, FKs, CHECKs)
-│   └── sample_data.sql                    roles, 3 users, 4 quizzes, 33 questions, 132 options,
-│                                          2 attempts, creator feedback for the student
-└── src/
-    ├── main/
-    │   ├── java/com/quizplatform/
-    │   │   ├── QuizApplication.java       Swing entry point (EDT launch)
-    │   │   ├── model/                     User (+Admin/QuizCreator/Participant), Quiz,
-    │   │   │                              Question, Option, QuizAttempt, Answer, Result,
-    │   │   │                              Feedback, SystemSetting + enums
-    │   │   ├── interfaces/                Authenticatable, UserOperations,
-    │   │   │                              QuizOperations, ResultOperations
-    │   │   ├── exception/                 InvalidLogin/Quiz/NotFound/User, Database, TimeExpired
-    │   │   ├── database/                  DatabaseConnection (config + JDBC factory)
-    │   │   ├── repository/                Repository<T> (generic in-memory cache)
-    │   │   ├── util/                      PasswordUtil (SHA-256), ValidationUtil
-    │   │   ├── dao/                       8 DAO interfaces
-    │   │   ├── dao/impl/                  8 JDBC implementations (PreparedStatement+ResultSet)
-    │   │   ├── service/                   Authentication/User/Quiz/Score/Result services,
-    │   │   │                              ResultManager (synchronized), SystemSettingsService
-    │   │   ├── timer/                     QuizTimer (dedicated countdown thread)
-    │   │   ├── gui/                       Login/Register frames, 3 dashboards, 15 screens
-    │   │   │                              (users, approval, settings, create-quiz, questions,
-    │   │   │                              results, feedback, attempt, history, profile...)
-    │   │   └── servlet/                   Login/Quiz/Result/Admin servlets + WebPages helper
-    │   ├── resources/config.properties    DB credentials (classpath)
-    │   └── webapp/                        index.html, css/style.css, WEB-INF/web.xml
-    └── test/java/com/quizplatform/        5 test classes, 18 tests
-```
-
----
-
-## 14. Testing
-
-`mvn test` runs everything **without MySQL** (real JDBC is tested against an
-in-memory H2 database in MySQL mode using the actual `database/schema.sql`):
-
-| Test class | Covers |
-|------------|--------|
-| `ScoreServiceTest` | correct/incorrect/unanswered marks, percentage, feedback, `generateReport` |
-| `RepositoryTest` | generic `Repository<T>` for `Quiz` and `Result` |
-| `ValidationAndExceptionTest` | SHA-256, email/duration/password validation, role conversion, `InvalidLoginException` |
-| `QuizTimerTest` | countdown ticks, expiry callback, `stop()` via interrupt, MM:SS format |
-| `DatabaseOperationsTest` | user CRUD + duplicate email, login success/failure, quiz validation + approval workflow, transactional submission + score, history, `TimeExpiredException`, DB-failure |
-
-Manual test checklist for the viva:
-
-1. Admin login success / wrong password error
-2. Create user -> duplicate email rejected
-3. Update user (blank password keeps old one)
-4. Delete user with confirmation
-5. Create quiz with 0-minute duration rejected
-6. Add question with < 2 options or no correct answer rejected
-7. Submit empty quiz rejected
-8. Admin approves quiz -> participant can see it
-9. Admin rejects quiz -> participant cannot see it
-10. Participant takes timed quiz, navigates, submits
-11. Unanswered warning on submit
-12. Timer reaches 00:00 -> auto-submit
-13. Score/percentage/correct-incorrect/feedback screen
-14. Performance history + detail review
-15. Creator gives feedback -> participant sees it
-16. MySQL stopped -> friendly `DatabaseException` message (no stack trace in UI)
-
----
-
-## 15. 10-Minute Demo Script (viva)
-
-1. `mvn compile exec:java` -> LoginFrame
-2. `admin@quiz.com` -> Dashboard shows users, quizzes, pending, attempts
-3. Users -> create a participant, update a role, delete with confirmation
-4. Quiz Approval -> View Details of quiz #4 -> **Approve** -> participant sees it
-5. Logout -> `creator@quiz.com` -> Create Quiz + add a question (radio = correct answer)
-6. My Quizzes -> Submit for Approval -> status becomes PENDING
-7. Logout -> `student@quiz.com` -> Available Quizzes -> Start -> answer with radio buttons
-8. Submit -> Result screen (score, `JProgressBar`, question review, feedback)
-9. My Attempts -> View Full Detail; Profile -> change name/password
-10. (Optional) Deploy WAR on Tomcat -> open `/admin` -> approve/reject from the browser
-
----
-
-## 16. Common Errors and Fixes
-
-| Error | Fix |
-|-------|-----|
-| `Cannot connect to database` | Start MySQL; check `src/main/resources/config.properties` (user/password); run `schema.sql` + `sample_data.sql` |
-| `No suitable driver` | MySQL connector is a Maven dependency - run `mvn compile` once with internet |
-| `Table 'java_quiz_platform.X' doesn't exist` | Run `database/schema.sql` (creates the DB) then `database/sample_data.sql` |
-| `Duplicate entry '...' for key 'email'` | Expected behavior - the email is already registered (also covered by a test) |
-| Timer not firing / window frozen | The app uses `invokeLater` on a background thread - one `QuizTimer` per attempt, stopped via `timer.stop()` on re-entry |
-| `403 Administrator role required` (web) | Login as `admin@quiz.com` - participants cannot open `/admin` (by design) |
-| `404` on Tomcat | WAR name must be `java-quiz-platform.war`; open `/java-quiz-platform/` with the context path |
-| `mvn: command not found` | Install Maven 3.8+ and Java 17, set `JAVA_HOME` |
-
----
-
-## 17. Viva Preparation Pointers
-
-Point the examiner at the comments in the code - every concept is marked:
-
-* `// Demonstrates inheritance / runtime polymorphism / method overriding` (model)
-* `// Demonstrates interface implementation` (services)
-* `// Demonstrates custom exception handling` (services, GUI, DAOs)
-* `// Demonstrates Generics` (repository, service caches)
-* `// Demonstrates multithreading` (timer)
-* `// Demonstrates synchronization` (ResultManager)
-* `// Demonstrates JDBC / transaction management` (dao.impl)
-* `// Demonstrates Servlet integration` (servlet package)
-
-Know in one sentence each: why `PreparedStatement` (SQL injection safety), why
-`synchronized` on `saveResult` (the EDT and the timer thread share statistics),
-why `invokeLater` (Swing is single-threaded), what happens on `commit` vs
-`rollback` in `submitAttempt`, and how role strings become `Admin` /
-`QuizCreator` / `Participant` objects (`UserDAOImpl.mapRow`).
-
+- [x] **Maven Compile & Dependency Resolution**: FlatLaf, MySQL Connector/J, Servlet API, JUnit 5, and H2 test database compile cleanly.
+- [x] **Automated Test Suite**: 18 unit and integration tests passing (`mvn test`).
+- [x] **WAR Packaging**: `mvn clean package` generates valid `target/java-quiz-platform.war`.
+- [x] **Swing Look & Feel**: Modern FlatLaf theme initialized with `#172554` Navy / `#3B82F6` Blue design tokens.
+- [x] **Participant Interactive Experience**: Real-time question navigator palette with answered/unanswered color tracking.
+- [x] **Thread Safety**: Multithreaded timer with clean interruption and synchronized in-memory statistics.

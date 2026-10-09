@@ -127,6 +127,17 @@ public class ResultService {
         feedbackDAO.addFeedback(feedback);
     }
 
+    public void addFeedback(int resultId, int quizId, int participantId, int commentedBy, String comment)
+            throws DatabaseException {
+        Feedback fb = new Feedback();
+        fb.setResultId(resultId);
+        fb.setQuizId(quizId);
+        fb.setParticipantId(participantId);
+        fb.setCommentedBy(commentedBy);
+        fb.setComment(comment);
+        addFeedback(fb);
+    }
+
     public List<Feedback> getFeedbackForResult(int resultId) throws DatabaseException {
         return feedbackDAO.getFeedbackByResult(resultId);
     }

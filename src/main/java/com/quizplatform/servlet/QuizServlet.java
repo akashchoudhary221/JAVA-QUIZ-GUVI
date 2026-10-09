@@ -20,7 +20,9 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Web version of the quiz flow:
@@ -71,17 +73,18 @@ public class QuizServlet extends HttpServlet {
         try {
             List<Quiz> quizzes = quizService.getApprovedQuizzes();
             if (quizzes.isEmpty()) {
-                rows.append("<tr><td colspan=\"5\">No approved quizzes available yet.</td></tr>");
+                rows.append("<tr><td colspan=\"5\" style=\"text-align: center; color: var(--text-muted);\">No approved quizzes available currently.</td></tr>");
             }
             for (Quiz quiz : quizzes) {
                 rows.append("<tr>")
-                        .append("<td>").append(quiz.getId()).append("</td>")
-                        .append("<td>").append(WebPages.escape(quiz.getTitle())).append("</td>")
-                        .append("<td>").append(quiz.getDurationMinutes()).append(" min</td>")
-                        .append("<td>").append(quiz.getTotalMarks()).append("</td>")
+                        .append("<td>#").append(quiz.getId()).append("</td>")
+                        .append("<td><b>").append(WebPages.escape(quiz.getTitle())).append("</b><br>")
+                        .append("<small style=\"color: var(--text-muted);\">").append(WebPages.escape(quiz.getDescription())).append("</small></td>")
+                        .append("<td>").append(quiz.getDurationMinutes()).append(" mins</td>")
+                        .append("<td>").append(quiz.getTotalMarks()).append(" pts</td>")
                         .append("<td><a class=\"button\" href=\"").append(context)
                         .append("/quiz?action=attempt&id=").append(quiz.getId())
-                        .append("\">Start</a></td>")
+                        .append("\">▶ Start Quiz</a></td>")
                         .append("</tr>");
             }
         } catch (DatabaseException e) {
@@ -90,19 +93,24 @@ public class QuizServlet extends HttpServlet {
         }
 
         String body = "<section class=\"card\">"
-                + "<h2>Welcome " + WebPages.escape(String.valueOf(userName))
-                + " - available quizzes</h2>"
-                + "<table><thead><tr><th>ID</th><th>Title</th><th>Duration</th>"
-                + "<th>Marks</th><th>Action</th></tr></thead><tbody>"
+                + "<div class=\"card-header\">"
+                + "  <div>"
+                + "    <h2>Available Quizzes</h2>"
+                + "    <p class=\"subtitle\" style=\"margin-bottom:0;\">Welcome back, <b>" + WebPages.escape(String.valueOf(userName)) + "</b> &mdash; select an approved quiz below to begin.</p>"
+                + "  </div>"
+                + "  <a class=\"button secondary\" href=\"" + context + "/result\">View My Past Results</a>"
+                + "</div>"
+                + "<table><thead><tr><th>ID</th><th>Quiz Details</th><th>Duration</th>"
+                + "<th>Total Marks</th><th>Action</th></tr></thead><tbody>"
                 + rows
                 + "</tbody></table>"
-                + "<p class=\"muted\">The countdown timer of this project is implemented in Java "
-                + "(Swing desktop application). This web module focuses on servlet integration.</p>"
+                + "<div style=\"margin-top: 20px; padding: 12px 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px;\">"
+                + "  <p style=\"color: var(--text-muted);\">💡 <b>Notice:</b> You are taking this quiz in real-time. Each approved quiz features automated timing, questions with options A-D, and immediate evaluation.</p>"
+                + "</div>"
                 + "</section>";
-        out.print(WebPages.page(context, "Available Quizzes", body));
+        out.print(WebPages.page(request, "Available Quizzes", body));
     }
 
-    /** Renders the questions of one quiz as an HTML form (radio buttons). */
     private void renderAttemptForm(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         response.setContentType("text/html;charset=UTF-8");
@@ -121,48 +129,86 @@ public class QuizServlet extends HttpServlet {
             Quiz quiz = quizService.getQuizById(quizId);
             List<Question> questions = quizService.getQuestionsForQuiz(quizId);
             if (quiz == null || questions.isEmpty()) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Quiz not found");
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Quiz not found or contains no questions");
                 return;
             }
-            // remember the start time in the session (used for time taken)
+
             HttpSession session = request.getSession(true);
             session.setAttribute("attemptStart_" + quizId, System.currentTimeMillis());
 
+            int totalSeconds = quiz.getDurationMinutes() * 60;
+
             StringBuilder html = new StringBuilder();
-            html.append("<section class=\"card\">")
-                    .append("<h2>").append(WebPages.escape(quiz.getTitle())).append("</h2>")
-                    .append("<p class=\"muted\">Duration: ").append(quiz.getDurationMinutes())
-                    .append(" minutes | Marks: ").append(quiz.getTotalMarks()).append("</p>")
-                    .append("<form method=\"post\" action=\"").append(context).append("/quiz\">")
+            html.append("<div id=\"timerBanner\" style=\"position:sticky; top:75px; z-index:40; background:#172554; color:#fff; padding:12px 20px; border-radius:var(--radius-md); margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; box-shadow:var(--shadow-md);\">")
+                    .append("  <div style=\"display:flex; align-items:center; gap:8px;\">")
+                    .append("    <span style=\"font-size:20px;\">⏱️</span>")
+                    .append("    <span style=\"font-weight:600;\">Time Remaining:</span>")
+                    .append("    <span id=\"timerDisplay\" style=\"font-size:20px; font-weight:700; color:#3b82f6; font-family:monospace;\">")
+                    .append(String.format("%02d:00", quiz.getDurationMinutes())).append("</span>")
+                    .append("  </div>")
+                    .append("  <span style=\"font-size:13px; color:#94a3b8;\">⚡ Auto-submits when time expires</span>")
+                    .append("</div>")
+                    .append("<section class=\"card\">")
+                    .append("<div class=\"card-header\">")
+                    .append("  <div>")
+                    .append("    <h2>").append(WebPages.escape(quiz.getTitle())).append("</h2>")
+                    .append("    <p class=\"subtitle\" style=\"margin-bottom:0;\">Duration: <b>").append(quiz.getDurationMinutes())
+                    .append(" minutes</b> &bull; Total Marks: <b>").append(quiz.getTotalMarks()).append(" pts</b> &bull; ")
+                    .append(questions.size()).append(" Questions</p>")
+                    .append("  </div>")
+                    .append("</div>")
+                    .append("<form id=\"quizForm\" method=\"post\" action=\"").append(context).append("/quiz\" onsubmit=\"return confirm('Are you sure you want to submit your quiz?');\">")
                     .append("<input type=\"hidden\" name=\"quizId\" value=\"").append(quizId).append("\">");
 
             int number = 1;
             for (Question question : questions) {
-                html.append("<fieldset>")
-                        .append("<legend>Q").append(number++).append(". ")
-                        .append(WebPages.escape(question.getText()))
-                        .append(" [").append(question.getMarks()).append(" mark(s)]</legend>");
+                html.append("<div class=\"question-block\">")
+                        .append("<h3><span>Question ").append(number++).append(" of ").append(questions.size()).append("</span>")
+                        .append("<span class=\"badge badge-approved\">").append(question.getMarks()).append(" Mark(s)</span></h3>")
+                        .append("<p style=\"font-size: 15px; margin-bottom: 14px;\">").append(WebPages.escape(question.getText())).append("</p>")
+                        .append("<div class=\"options-group\">");
+
                 for (Option option : question.getOptions()) {
-                    html.append("<label class=\"option\">")
+                    html.append("<label class=\"option-card\">")
                             .append("<input type=\"radio\" name=\"q_").append(question.getId())
                             .append("\" value=\"").append(option.getId()).append("\"> ")
-                            .append(option.getLetter()).append(") ")
+                            .append("<span><b>(").append(option.getLetter()).append(")</b> &nbsp; ")
                             .append(WebPages.escape(option.getOptionText()))
-                            .append("</label>");
+                            .append("</span></label>");
                 }
-                html.append("</fieldset>");
+                html.append("</div></div>");
             }
-            html.append("<button type=\"submit\">Submit Quiz</button>")
-                    .append("</form></section>");
 
-            out.print(WebPages.page(context, "Attempt Quiz", html.toString()));
+            html.append("<div style=\"margin-top: 24px; display: flex; gap: 12px;\">")
+                    .append("<button type=\"submit\">✔ Submit Quiz Evaluation</button>")
+                    .append("<a class=\"button secondary\" href=\"").append(context).append("/quiz\">Cancel & Return</a>")
+                    .append("</div>")
+                    .append("</form></section>")
+                    .append("<script>")
+                    .append("var timeLeft = ").append(totalSeconds).append(";")
+                    .append("var timerElem = document.getElementById('timerDisplay');")
+                    .append("var formElem = document.getElementById('quizForm');")
+                    .append("var timerInt = setInterval(function() {")
+                    .append("  timeLeft--;")
+                    .append("  if (timeLeft <= 0) {")
+                    .append("    clearInterval(timerInt);")
+                    .append("    alert('Time has expired! Submitting your answers automatically now.');")
+                    .append("    formElem.submit();")
+                    .append("    return;")
+                    .append("  }")
+                    .append("  var m = Math.floor(timeLeft / 60);")
+                    .append("  var s = timeLeft % 60;")
+                    .append("  timerElem.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;")
+                    .append("  if (timeLeft < 60) { timerElem.style.color = '#ef4444'; }")
+                    .append("}, 1000);")
+                    .append("</script>");
+
+            out.print(WebPages.page(request, "Attempt Quiz: " + quiz.getTitle(), html.toString()));
         } catch (DatabaseException e) {
-            out.print(WebPages.page(context, "Error",
-                    WebPages.alert("error", e.getMessage())));
+            out.print(WebPages.page(request, "Error", WebPages.alert("error", e.getMessage())));
         }
     }
 
-    /** Stores attempt + answers + result in ONE transaction (AttemptDAO.submitAttempt). */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -195,7 +241,6 @@ public class QuizServlet extends HttpServlet {
             }
             List<Question> questions = quizService.getQuestionsForQuiz(quizId);
 
-            // ---- collect the submitted answers from the request parameters ----
             List<Answer> answers = new ArrayList<>();
             for (Question question : questions) {
                 String value = request.getParameter("q_" + question.getId());
@@ -204,13 +249,12 @@ public class QuizServlet extends HttpServlet {
                     try {
                         selected = Long.parseLong(value);
                     } catch (NumberFormatException parseError) {
-                        selected = -1;   // ignore invalid input instead of crashing
+                        selected = -1;
                     }
                 }
                 answers.add(new Answer(question.getId(), selected));
             }
 
-            // ---- elapsed time from the session start timestamp ----
             Object startAttribute = session.getAttribute("attemptStart_" + quizId);
             long elapsedSeconds = 0;
             if (startAttribute instanceof Long start) {
@@ -219,25 +263,24 @@ public class QuizServlet extends HttpServlet {
             long allowed = quiz.getDurationMinutes() * 60L;
             boolean timedOut = elapsedSeconds > allowed;
             if (timedOut) {
-                elapsedSeconds = allowed;   // keep the answers that were given before expiry
+                elapsedSeconds = allowed;
             }
             session.removeAttribute("attemptStart_" + quizId);
 
             Result result = resultService.submitAttempt(quiz, questions, userId, userName,
                     answers, elapsedSeconds, timedOut);
 
-            renderResult(out, context, result, questions, answers);
+            renderResult(request, out, context, result, questions, answers);
         } catch (TimeExpiredException | InvalidQuizException | DatabaseException e) {
-            out.print(WebPages.page(context, "Submission failed",
+            out.print(WebPages.page(request, "Submission failed",
                     WebPages.alert("error", e.getMessage())
                             + "<a class=\"button\" href=\"" + context + "/quiz\">Back to quizzes</a>"));
         }
     }
 
-    /** Renders the score + question-wise review of a finished attempt. */
-    private void renderResult(PrintWriter out, String context, Result result,
+    private void renderResult(HttpServletRequest request, PrintWriter out, String context, Result result,
                               List<Question> questions, List<Answer> answers) {
-        java.util.Map<Integer, Long> chosenByQuestion = new java.util.HashMap<>();
+        Map<Integer, Long> chosenByQuestion = new HashMap<>();
         for (Answer answer : answers) {
             chosenByQuestion.put(answer.getQuestionId(), answer.getSelectedOptionId());
         }
@@ -246,43 +289,57 @@ public class QuizServlet extends HttpServlet {
         int number = 1;
         for (Question question : questions) {
             long chosen = chosenByQuestion.getOrDefault(question.getId(), -1L);
-            String yourAnswer = "Not answered";
+            String yourAnswer = "Not Answered";
             boolean correct = false;
             boolean attempted = false;
             for (Option option : question.getOptions()) {
                 if (option.getId() == chosen) {
-                    yourAnswer = option.getLetter() + ") " + option.getOptionText();
+                    yourAnswer = "(" + option.getLetter() + ") " + option.getOptionText();
                     correct = option.isCorrect();
                     attempted = true;
                 }
             }
             Option correctOption = question.getCorrectOption();
             String correctAnswer = correctOption == null ? "-"
-                    : correctOption.getLetter() + ") " + correctOption.getOptionText();
-            String outcome = !attempted ? "SKIPPED" : (correct ? "CORRECT" : "WRONG");
+                    : "(" + correctOption.getLetter() + ") " + correctOption.getOptionText();
+            String outcomeBadge = !attempted ? "<span class=\"badge badge-pending\">SKIPPED</span>"
+                    : (correct ? "<span class=\"badge badge-approved\">CORRECT</span>" : "<span class=\"badge badge-rejected\">WRONG</span>");
+
             rows.append("<tr><td>").append(number++).append("</td>")
                     .append("<td>").append(WebPages.escape(question.getText())).append("</td>")
                     .append("<td>").append(WebPages.escape(yourAnswer)).append("</td>")
                     .append("<td>").append(WebPages.escape(correctAnswer)).append("</td>")
-                    .append("<td class=\"").append(outcome.toLowerCase()).append("\">")
-                    .append(outcome).append("</td></tr>");
+                    .append("<td>").append(outcomeBadge).append("</td></tr>");
         }
 
+        boolean passed = result.getPercentage() >= 60.0;
+        String passBadge = passed ? "<span class=\"badge badge-approved\">PASSED</span>" : "<span class=\"badge badge-rejected\">NEEDS IMPROVEMENT</span>";
+
         String body = "<section class=\"card\">"
-                + "<h2>Result: " + WebPages.escape(result.getQuizTitle()) + "</h2>"
-                + WebPages.alert("success", "Score " + result.getObtainedMarks() + "/"
-                + result.getTotalMarks() + "  (" + result.getPercentage() + "%)")
-                + "<p><b>Correct:</b> " + result.getCorrectAnswers()
-                + " &nbsp; <b>Incorrect:</b> " + result.getIncorrectAnswers()
-                + " &nbsp; <b>Time taken:</b> " + result.getFormattedTimeTaken() + "</p>"
-                + "<p><i>" + WebPages.escape(result.getFeedback()) + "</i></p>"
-                + "<table><thead><tr><th>#</th><th>Question</th><th>Your answer</th>"
-                + "<th>Correct answer</th><th>Result</th></tr></thead><tbody>"
+                + "<div class=\"card-header\">"
+                + "  <div>"
+                + "    <h2>Assessment Result: " + WebPages.escape(result.getQuizTitle()) + "</h2>"
+                + "    <p class=\"subtitle\" style=\"margin-bottom:0;\">Submitted on " + result.getSubmittedAt() + " " + passBadge + "</p>"
+                + "  </div>"
+                + "</div>"
+                + "<div class=\"stats\">"
+                + "  <div class=\"stat success\"><p class=\"stat-label\">Score Obtained</p><span class=\"stat-num\">" + result.getObtainedMarks() + "/" + result.getTotalMarks() + "</span></div>"
+                + "  <div class=\"stat " + (passed ? "success" : "warning") + "\"><p class=\"stat-label\">Percentage</p><span class=\"stat-num\">" + result.getPercentage() + "%</span></div>"
+                + "  <div class=\"stat\"><p class=\"stat-label\">Correct / Total</p><span class=\"stat-num\">" + result.getCorrectAnswers() + "/" + result.getTotalQuestions() + "</span></div>"
+                + "  <div class=\"stat\"><p class=\"stat-label\">Time Taken</p><span class=\"stat-num\" style=\"font-size:22px;\">" + result.getFormattedTimeTaken() + "</span></div>"
+                + "</div>"
+                + (result.getFeedback() != null && !result.getFeedback().isBlank()
+                ? WebPages.alert("success", "Evaluation: " + result.getFeedback()) : "")
+                + "<h3>Detailed Question Review</h3>"
+                + "<table><thead><tr><th>#</th><th>Question</th><th>Your Answer</th>"
+                + "<th>Correct Answer</th><th>Outcome</th></tr></thead><tbody>"
                 + rows
                 + "</tbody></table>"
-                + "<a class=\"button\" href=\"" + context + "/quiz\">Back to quizzes</a> "
-                + "<a class=\"button\" href=\"" + context + "/result\">My performance history</a>"
+                + "<div style=\"margin-top: 24px; display: flex; gap: 12px;\">"
+                + "  <a class=\"button\" href=\"" + context + "/quiz\">Available Quizzes</a>"
+                + "  <a class=\"button secondary\" href=\"" + context + "/result\">View All My Results</a>"
+                + "</div>"
                 + "</section>";
-        out.print(WebPages.page(context, "Quiz Result", body));
+        out.print(WebPages.page(request, "Quiz Result", body));
     }
 }

@@ -42,7 +42,7 @@ public class ResultServlet extends HttpServlet {
         String idParameter = request.getParameter("id");
         if (idParameter != null) {
             try {
-                renderDetail(out, request.getContextPath(), Integer.parseInt(idParameter), userId);
+                renderDetail(request, out, request.getContextPath(), Integer.parseInt(idParameter), userId);
                 return;
             } catch (NumberFormatException e) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid result id");
@@ -50,74 +50,92 @@ public class ResultServlet extends HttpServlet {
             }
         }
 
-        // ---- history table ----
+        // History Table
         StringBuilder rows = new StringBuilder();
         try {
             List<Result> results = resultService.getHistory(userId);
             if (results.isEmpty()) {
-                rows.append("<tr><td colspan=\"6\">You have not attempted any quiz yet.</td></tr>");
+                rows.append("<tr><td colspan=\"6\" style=\"text-align:center; color:var(--text-muted);\">You have not attempted any quizzes yet.</td></tr>");
             }
             for (Result result : results) {
+                boolean passed = result.getPercentage() >= 60.0;
+                String badge = passed ? "<span class=\"badge badge-approved\">" + result.getPercentage() + "%</span>"
+                        : "<span class=\"badge badge-rejected\">" + result.getPercentage() + "%</span>";
+
                 rows.append("<tr>")
-                        .append("<td>").append(result.getId()).append("</td>")
-                        .append("<td>").append(WebPages.escape(result.getQuizTitle())).append("</td>")
-                        .append("<td>").append(result.getSubmittedAt() == null ? "-"
-                                : DATE_FORMAT.format(result.getSubmittedAt())).append("</td>")
-                        .append("<td>").append(result.getObtainedMarks()).append("/")
-                        .append(result.getTotalMarks()).append("</td>")
-                        .append("<td>").append(result.getPercentage()).append("%</td>")
-                        .append("<td><a class=\"button\" href=\"")
-                        .append(request.getContextPath()).append("/result?id=")
-                        .append(result.getId()).append("\">View</a></td>")
+                        .append("<td>#").append(result.getId()).append("</td>")
+                        .append("<td><b>").append(WebPages.escape(result.getQuizTitle())).append("</b></td>")
+                        .append("<td>").append(result.getSubmittedAt() == null ? "-" : DATE_FORMAT.format(result.getSubmittedAt())).append("</td>")
+                        .append("<td>").append(result.getObtainedMarks()).append(" / ").append(result.getTotalMarks()).append("</td>")
+                        .append("<td>").append(badge).append("</td>")
+                        .append("<td><a class=\"button secondary\" href=\"").append(request.getContextPath())
+                        .append("/result?id=").append(result.getId()).append("\">🔍 View Report</a></td>")
                         .append("</tr>");
             }
         } catch (DatabaseException e) {
-            rows.append("<tr><td colspan=\"6\">")
-                    .append(WebPages.escape(e.getMessage())).append("</td></tr>");
+            rows.append("<tr><td colspan=\"6\">").append(WebPages.escape(e.getMessage())).append("</td></tr>");
         }
 
         String body = "<section class=\"card\">"
-                + "<h2>My Performance History</h2>"
-                + "<table><thead><tr><th>ID</th><th>Quiz</th><th>Date</th><th>Score</th>"
-                + "<th>Percentage</th><th>Report</th></tr></thead><tbody>"
+                + "<div class=\"card-header\">"
+                + "  <div>"
+                + "    <h2>My Assessment History</h2>"
+                + "    <p class=\"subtitle\" style=\"margin-bottom:0;\">Review previous evaluation scores, percentage analytics, and instructor feedback</p>"
+                + "  </div>"
+                + "  <a class=\"button\" href=\"" + request.getContextPath() + "/quiz\">Take a Quiz Now</a>"
+                + "</div>"
+                + "<table><thead><tr><th>ID</th><th>Quiz Title</th><th>Submission Date</th>"
+                + "<th>Marks Obtained</th><th>Score %</th><th>Action</th></tr></thead><tbody>"
                 + rows
-                + "</tbody></table></section>";
-        out.print(WebPages.page(request.getContextPath(), "My Results", body));
+                + "</tbody></table>"
+                + "</section>";
+
+        out.print(WebPages.page(request, "My Results", body));
     }
 
-    /** Full performance report of one result + creator feedback. */
-    private void renderDetail(PrintWriter out, String context, int resultId, int userId)
+    private void renderDetail(HttpServletRequest request, PrintWriter out, String context, int resultId, int userId)
             throws IOException {
         try {
             Result result = resultService.getAllResults().stream()
                     .filter(r -> r.getId() == resultId && r.getParticipantId() == userId)
                     .findFirst().orElse(null);
             if (result == null) {
-                out.print(WebPages.page(context, "Not found",
-                        WebPages.alert("error", "Result not found.")));
+                out.print(WebPages.page(request, "Not Found",
+                        WebPages.alert("error", "The requested assessment result could not be found.")));
                 return;
             }
+
             StringBuilder feedbackHtml = new StringBuilder();
             List<Feedback> feedbackList = resultService.getFeedbackForResult(result.getId());
             if (!feedbackList.isEmpty()) {
-                feedbackHtml.append("<h3>Feedback</h3><ul>");
+                feedbackHtml.append("<div style=\"margin: 18px 0; padding: 14px 18px; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm);\">")
+                        .append("<h4 style=\"margin-bottom: 8px;\">Faculty Comments & Personalized Guidance</h4>");
                 for (Feedback feedback : feedbackList) {
-                    feedbackHtml.append("<li>").append(WebPages.escape(feedback.getComment()))
-                            .append(" <i>(by ").append(WebPages.escape(feedback.getCommentedByName()))
-                            .append(")</i></li>");
+                    feedbackHtml.append("<p style=\"margin: 4px 0;\">&bull; \"<b>").append(WebPages.escape(feedback.getComment()))
+                            .append("</b>\" &mdash; <span style=\"color:var(--text-muted);\">by ")
+                            .append(WebPages.escape(feedback.getCommentedByName())).append("</span></p>");
                 }
-                feedbackHtml.append("</ul>");
+                feedbackHtml.append("</div>");
             }
+
             String body = "<section class=\"card\">"
-                    + "<h2>Performance Report</h2>"
+                    + "<div class=\"card-header\">"
+                    + "  <div>"
+                    + "    <h2>Performance Report: " + WebPages.escape(result.getQuizTitle()) + "</h2>"
+                    + "    <p class=\"subtitle\" style=\"margin-bottom:0;\">Participant: <b>" + WebPages.escape(result.getParticipantName()) + "</b></p>"
+                    + "  </div>"
+                    + "  <a class=\"button secondary\" href=\"" + context + "/result\">&larr; Back to History</a>"
+                    + "</div>"
                     + "<pre>" + WebPages.escape(resultService.generateReport(result)) + "</pre>"
                     + feedbackHtml
-                    + "<a class=\"button\" href=\"" + context + "/result\">Back to history</a>"
+                    + "<div style=\"margin-top: 20px;\">"
+                    + "  <a class=\"button\" href=\"" + context + "/quiz\">Available Quizzes</a>"
+                    + "</div>"
                     + "</section>";
-            out.print(WebPages.page(context, "Report", body));
+
+            out.print(WebPages.page(request, "Assessment Report #" + resultId, body));
         } catch (DatabaseException e) {
-            out.print(WebPages.page(context, "Error",
-                    WebPages.alert("error", e.getMessage())));
+            out.print(WebPages.page(request, "Error", WebPages.alert("error", e.getMessage())));
         }
     }
 }

@@ -32,10 +32,14 @@ public class LoginServlet extends HttpServlet {
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session != null && session.getAttribute("userId") != null) {
-            // already logged in -> go to the quiz list (or admin for admins)
             String role = (String) session.getAttribute("role");
-            response.sendRedirect(request.getContextPath()
-                    + (Role.ADMIN.name().equals(role) ? "/admin" : "/quiz"));
+            String target = "/quiz";
+            if (Role.ADMIN.name().equals(role)) {
+                target = "/admin";
+            } else if (Role.QUIZ_CREATOR.name().equals(role)) {
+                target = "/creator";
+            }
+            response.sendRedirect(request.getContextPath() + target);
             return;
         }
         renderForm(request, response,
@@ -50,47 +54,54 @@ public class LoginServlet extends HttpServlet {
         String password = request.getParameter("password");
 
         try {
-            // SAME architecture as the Swing GUI: Servlet -> Service -> DAO -> JDBC -> MySQL
             User user = authService.login(email, password);
 
-            HttpSession session = request.getSession(true);     // create session
+            HttpSession session = request.getSession(true);
             session.setAttribute("userId", user.getId());
             session.setAttribute("userName", user.getName());
             session.setAttribute("userEmail", user.getEmail());
             session.setAttribute("role", user.getRole().name());
 
-            response.sendRedirect(request.getContextPath()
-                    + (user.getRole() == Role.ADMIN ? "/admin" : "/quiz"));
+            String target = "/quiz";
+            if (user.getRole() == Role.ADMIN) {
+                target = "/admin";
+            } else if (user.getRole() == Role.QUIZ_CREATOR) {
+                target = "/creator";
+            }
+            response.sendRedirect(request.getContextPath() + target);
 
         } catch (InvalidLoginException e) {
-            // custom exception from the service layer -> shown in the form
             request.setAttribute("error", e.getMessage());
             renderForm(request, response, e.getMessage(), null);
         } catch (DatabaseException e) {
-            renderForm(request, response, "Database error: " + e.getMessage(), null);
+            renderForm(request, response, "Database unavailable: " + e.getMessage(), null);
         }
     }
 
-    /** Renders the login form (and an optional error message). */
     private void renderForm(HttpServletRequest request, HttpServletResponse response,
                             String error, String message) throws IOException {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
 
         String body = "<section class=\"card narrow\">"
-                + "<h2>Login</h2>"
+                + "<h2>Sign In</h2>"
+                + "<p class=\"subtitle\">Access your quiz evaluations and reports</p>"
                 + (error != null ? WebPages.alert("error", error) : "")
                 + (message != null ? WebPages.alert("success", message) : "")
                 + "<form method=\"post\" action=\"" + request.getContextPath() + "/login\">"
-                + "  <label>Email</label>"
-                + "  <input type=\"email\" name=\"email\" required autofocus>"
-                + "  <label>Password</label>"
-                + "  <input type=\"password\" name=\"password\" required>"
-                + "  <button type=\"submit\">Login</button>"
+                + "  <label for=\"email\">Email Address</label>"
+                + "  <input type=\"email\" id=\"email\" name=\"email\" placeholder=\"e.g. student@quiz.com\" required autofocus>"
+                + "  <label for=\"password\">Password</label>"
+                + "  <input type=\"password\" id=\"password\" name=\"password\" placeholder=\"Enter your password\" required>"
+                + "  <button type=\"submit\" style=\"width: 100%; margin-top: 22px;\">Sign In &rarr;</button>"
                 + "</form>"
-                + "<p class=\"muted\">Demo accounts: admin@quiz.com / admin123, "
-                + "creator@quiz.com / creator123, student@quiz.com / student123</p>"
+                + "<div style=\"margin-top: 24px; padding: 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px;\">"
+                + "  <p style=\"font-weight: 600; margin-bottom: 4px;\">Preconfigured Demo Accounts:</p>"
+                + "  <p style=\"color: var(--text-muted); margin: 2px 0;\">&bull; Admin: <code>admin@quiz.com</code> / admin123</p>"
+                + "  <p style=\"color: var(--text-muted); margin: 2px 0;\">&bull; Creator: <code>creator@quiz.com</code> / creator123</p>"
+                + "  <p style=\"color: var(--text-muted); margin: 2px 0;\">&bull; Student: <code>student@quiz.com</code> / student123</p>"
+                + "</div>"
                 + "</section>";
-        out.print(WebPages.page(request.getContextPath(), "Login", body));
+        out.print(WebPages.page(request, "Sign In", body));
     }
 }

@@ -24,6 +24,8 @@ import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -31,12 +33,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Quiz Creator: add / edit / delete questions of a selected quiz.
+ * Quiz Creator: author, edit, and delete questions and option sets for quizzes.
  *
  * Demonstrates:
- *  - JRadioButton + ButtonGroup for choosing the correct answer (A-D)
+ *  - JRadioButton + ButtonGroup for selecting the single correct answer
  *  - Collections: List<Question>, List<Quiz>
- *  - custom exceptions from the service layer (InvalidQuizException)
+ *  - Generic and Custom Exception Handling (InvalidQuizException)
  */
 public class QuestionManagementPanel extends JPanel {
 
@@ -48,18 +50,18 @@ public class QuestionManagementPanel extends JPanel {
     private List<Quiz> quizList = new ArrayList<>();
     private Quiz currentQuiz;
 
-    // ---- questions table ----
+    // ---- Questions table ----
     private final DefaultTableModel tableModel =
-            UIUtil.emptyModel("ID", "Question", "Marks", "Correct Answer");
+            UIUtil.emptyModel("ID", "Question Text", "Marks", "Correct Answer");
     private final JTable table = UIUtil.readOnlyTable(tableModel);
     private List<Question> questions = new ArrayList<>();
     private int selectedQuestionId = -1;
 
-    // ---- question form ----
+    // ---- Question form ----
     private final JTextArea questionArea = new JTextArea(3, 40);
-    private final JTextField marksField = new JTextField("1", 5);
+    private final JTextField marksField = new JTextField("1", 6);
     private final JTextField[] optionFields = {
-            new JTextField(30), new JTextField(30), new JTextField(30), new JTextField(30)};
+            new JTextField(32), new JTextField(32), new JTextField(32), new JTextField(32)};
     private final JRadioButton[] correctButtons = {
             new JRadioButton("A"), new JRadioButton("B"),
             new JRadioButton("C"), new JRadioButton("D")};
@@ -69,16 +71,16 @@ public class QuestionManagementPanel extends JPanel {
     public QuestionManagementPanel(QuizCreatorDashboard dashboard, QuizCreator creator) {
         this.dashboard = dashboard;
         this.creatorId = creator.getId();
-        setLayout(new BorderLayout(0, 12));
+        setLayout(new BorderLayout(0, 14));
         setBackground(UIUtil.BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+        setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
 
         add(buildSelector(), BorderLayout.NORTH);
 
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                cardWrap("Questions of selected quiz", new JScrollPane(table)),
-                cardWrap("Question details", buildQuestionForm()));
-        split.setResizeWeight(0.45);
+                cardWrap("Questions in Selected Quiz", new JScrollPane(table)),
+                cardWrap("Question & Options Editor", buildQuestionForm()));
+        split.setResizeWeight(0.42);
         split.setBorder(null);
         split.setBackground(UIUtil.BACKGROUND);
         add(split, BorderLayout.CENTER);
@@ -91,25 +93,31 @@ public class QuestionManagementPanel extends JPanel {
     }
 
     private JPanel cardWrap(String title, java.awt.Component content) {
-        JPanel card = new JPanel(new BorderLayout(0, 6));
+        JPanel card = new JPanel(new BorderLayout(0, 8));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 224, 228)),
-                BorderFactory.createEmptyBorder(10, 12, 10, 12)));
+                BorderFactory.createLineBorder(UIUtil.BORDER, 1),
+                BorderFactory.createEmptyBorder(12, 16, 12, 16)));
         card.add(UIUtil.heading(title), BorderLayout.NORTH);
         card.add(content, BorderLayout.CENTER);
         return card;
     }
 
     private JPanel buildSelector() {
-        JPanel panel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         panel.setBackground(UIUtil.BACKGROUND);
-        panel.add(UIUtil.fieldLabel("Select quiz:"));
-        quizCombo.setPreferredSize(new java.awt.Dimension(420, 30));
+
+        JLabel label = UIUtil.fieldLabel("Target Quiz:");
+        panel.add(label);
+
+        quizCombo.setFont(UIUtil.normalFont());
+        quizCombo.setPreferredSize(new Dimension(440, 32));
         panel.add(quizCombo);
-        JButton load = UIUtil.primaryButton("Load Questions");
+
+        JButton load = UIUtil.primaryButton("🔄 Reload Questions");
         load.addActionListener(e -> loadSelectedQuiz());
         panel.add(load);
+
         return panel;
     }
 
@@ -120,31 +128,46 @@ public class QuestionManagementPanel extends JPanel {
         gc.insets = new Insets(5, 6, 5, 6);
         gc.anchor = GridBagConstraints.WEST;
 
+        questionArea.setFont(UIUtil.normalFont());
         questionArea.setLineWrap(true);
         questionArea.setWrapStyleWord(true);
-        addRow(form, gc, 0, "Question:", new JScrollPane(questionArea));
-        addRow(form, gc, 1, "Marks:", marksField);
+        JScrollPane qScroll = new JScrollPane(questionArea);
+        qScroll.setPreferredSize(new Dimension(480, 60));
+        addRow(form, gc, 0, "Question Text:", qScroll);
+
+        marksField.setFont(UIUtil.normalFont());
+        addRow(form, gc, 1, "Marks Value:", marksField);
 
         for (int i = 0; i < 4; i++) {
-            JPanel optionRow = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
+            JPanel optionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
             optionRow.setBackground(Color.WHITE);
+
+            correctButtons[i].setFont(UIUtil.boldFont());
+            correctButtons[i].setFocusPainted(false);
             correctGroup.add(correctButtons[i]);
             optionRow.add(correctButtons[i]);
-            optionRow.add(new JLabel("Option " + (char) ('A' + i) + ":"));
+
+            JLabel optLabel = new JLabel("Option " + (char) ('A' + i) + ":");
+            optLabel.setFont(UIUtil.normalFont());
+            optionRow.add(optLabel);
+
+            optionFields[i].setFont(UIUtil.normalFont());
+            optionFields[i].setPreferredSize(new Dimension(360, 28));
             optionRow.add(optionFields[i]);
-            addRow(form, gc, 2 + i, i == 0 ? "Options:" : "", optionRow);
+
+            addRow(form, gc, 2 + i, i == 0 ? "Options (A-D):" : "", optionRow);
         }
         correctButtons[0].setSelected(true);
 
-        addRow(form, gc, 6, "Explanation / feedback:", explanationField);
+        explanationField.setFont(UIUtil.normalFont());
+        explanationField.setPreferredSize(new Dimension(480, 28));
+        addRow(form, gc, 6, "Explanation:", explanationField);
 
-        JLabel hint = new JLabel("<html><small>Select the radio button of the CORRECT option. "
-                + "At least 2 options are required.</small></html>");
-        hint.setFont(UIUtil.smallFont());
-        hint.setForeground(Color.GRAY);
+        JLabel hint = new JLabel("<html><small style='color:#64748B;'>Select the radio button (A-D) representing the correct answer. Provide optional explanation for review.</small></html>");
         gc.gridx = 1;
         gc.gridy = 7;
         form.add(hint, gc);
+
         return form;
     }
 
@@ -153,6 +176,8 @@ public class QuestionManagementPanel extends JPanel {
         gc.gridy = row;
         if (!label.isEmpty()) {
             form.add(UIUtil.fieldLabel(label), gc);
+        } else {
+            form.add(new JLabel(""), gc);
         }
         gc.gridx = 1;
         gc.fill = GridBagConstraints.HORIZONTAL;
@@ -163,13 +188,13 @@ public class QuestionManagementPanel extends JPanel {
     }
 
     private JPanel buildButtons() {
-        JPanel panel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         panel.setBackground(UIUtil.BACKGROUND);
 
-        JButton add = UIUtil.successButton("Add Question");
-        JButton update = UIUtil.primaryButton("Update Question");
-        JButton delete = UIUtil.dangerButton("Delete Question");
-        JButton clear = UIUtil.neutralButton("Clear Form");
+        JButton add = UIUtil.successButton("➕ Add Question");
+        JButton update = UIUtil.primaryButton("💾 Update Question");
+        JButton delete = UIUtil.dangerButton("🗑 Delete Question");
+        JButton clear = UIUtil.secondaryButton("Clear Form");
 
         add.addActionListener(e -> addQuestion());
         update.addActionListener(e -> updateQuestion());
@@ -183,14 +208,13 @@ public class QuestionManagementPanel extends JPanel {
         return panel;
     }
 
-    /** Reloads the quiz combo box (called after creating/deleting a quiz). */
     public void refreshQuizSelector() {
         try {
             quizList = quizService.getQuizzesByCreator(creatorId);
             quizCombo.removeAllItems();
             for (Quiz quiz : quizList) {
-                quizCombo.addItem("#" + quiz.getId() + "  " + quiz.getTitle()
-                        + "  [" + quiz.getStatus().getLabel() + "]");
+                quizCombo.addItem("#" + quiz.getId() + " - " + quiz.getTitle()
+                        + " [" + quiz.getStatus().name() + "]");
             }
             if (!quizList.isEmpty()) {
                 quizCombo.setSelectedIndex(0);
@@ -204,15 +228,14 @@ public class QuestionManagementPanel extends JPanel {
         }
     }
 
-    /** Opens the question editor for a specific quiz (called by the dashboard). */
     public void loadQuiz(int quizId) {
         refreshQuizSelector();
         for (int i = 0; i < quizList.size(); i++) {
             if (quizList.get(i).getId() == quizId) {
                 if (quizCombo.getSelectedIndex() == i) {
-                    loadSelectedQuiz();   // selection unchanged -> load manually
+                    loadSelectedQuiz();
                 } else {
-                    quizCombo.setSelectedIndex(i);   // combo listener loads the questions
+                    quizCombo.setSelectedIndex(i);
                 }
                 return;
             }
@@ -235,8 +258,8 @@ public class QuestionManagementPanel extends JPanel {
                 tableModel.addRow(new Object[]{
                         question.getId(),
                         question.getText(),
-                        question.getMarks(),
-                        correct == null ? "-" : correct.getLetter() + ") " + correct.getOptionText()
+                        question.getMarks() + " mark(s)",
+                        correct == null ? "-" : "(" + correct.getLetter() + ") " + correct.getOptionText()
                 });
             }
             clearForm();
@@ -248,7 +271,7 @@ public class QuestionManagementPanel extends JPanel {
 
     private void fillFormFromSelection() {
         int row = table.getSelectedRow();
-        if (row < 0) {
+        if (row < 0 || row >= questions.size()) {
             return;
         }
         selectedQuestionId = (int) tableModel.getValueAt(row, 0);
@@ -275,20 +298,23 @@ public class QuestionManagementPanel extends JPanel {
         }
     }
 
-    /** Builds a Question (with its 4 options) from the form values. */
     private Question buildQuestionFromForm(int questionId) throws InvalidQuizException {
         if (currentQuiz == null) {
-            throw new InvalidQuizException("Select a quiz before entering a question.");
+            throw new InvalidQuizException("Please select a quiz first before authoring questions.");
         }
         int marks;
         try {
             marks = Integer.parseInt(marksField.getText().trim());
         } catch (NumberFormatException e) {
-            throw new InvalidQuizException("Marks must be a whole number.");
+            throw new InvalidQuizException("Marks must be a whole positive integer.");
         }
 
-        Question question = new Question(questionArea.getText().trim(), marks,
-                explanationField.getText().trim());
+        String text = questionArea.getText().trim();
+        if (text.isEmpty()) {
+            throw new InvalidQuizException("Question text cannot be blank.");
+        }
+
+        Question question = new Question(text, marks, explanationField.getText().trim());
         question.setId(questionId);
         question.setQuizId(currentQuiz.getId());
 
@@ -297,30 +323,29 @@ public class QuestionManagementPanel extends JPanel {
             if (correctButtons[i].isSelected()) {
                 correctIndex = i;
             }
-            String text = optionFields[i].getText().trim();
-            if (!text.isEmpty()) {          // empty trailing options are ignored
-                question.addOption(new Option(text, i + 1, i == correctIndex));
+            String optText = optionFields[i].getText().trim();
+            if (!optText.isEmpty()) {
+                question.addOption(new Option(optText, i + 1, i == correctIndex));
             }
         }
-        return question;   // QuizService performs the full validation
+        return question;
     }
 
     private void addQuestion() {
         if (currentQuiz == null) {
-            JOptionPane.showMessageDialog(this, "Select a quiz first.", "No selection",
+            JOptionPane.showMessageDialog(this, "Select a quiz first.", "No Selection",
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
         try {
             Question question = buildQuestionFromForm(0);
             quizService.addQuestion(question);
-            JOptionPane.showMessageDialog(this, "Question added.", "Success",
+            JOptionPane.showMessageDialog(this, "Question added successfully.", "Success",
                     JOptionPane.INFORMATION_MESSAGE);
             clearForm();
             loadSelectedQuiz();
         } catch (InvalidQuizException | DatabaseException e) {
-            // Demonstrates custom exception handling
-            JOptionPane.showMessageDialog(this, e.getMessage(), "Could not add question",
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Could Not Add Question",
                     JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -328,18 +353,18 @@ public class QuestionManagementPanel extends JPanel {
     private void updateQuestion() {
         if (selectedQuestionId <= 0) {
             JOptionPane.showMessageDialog(this, "Select a question in the table first.",
-                    "No selection", JOptionPane.WARNING_MESSAGE);
+                    "No Selection", JOptionPane.WARNING_MESSAGE);
             return;
         }
         try {
             Question question = buildQuestionFromForm(selectedQuestionId);
             quizService.updateQuestion(question);
-            JOptionPane.showMessageDialog(this, "Question updated.", "Success",
+            JOptionPane.showMessageDialog(this, "Question updated successfully.", "Success",
                     JOptionPane.INFORMATION_MESSAGE);
             clearForm();
             loadSelectedQuiz();
         } catch (InvalidQuizException | DatabaseException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), "Could not update question",
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Could Not Update Question",
                     JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -347,10 +372,10 @@ public class QuestionManagementPanel extends JPanel {
     private void deleteQuestion() {
         if (selectedQuestionId <= 0 || currentQuiz == null) {
             JOptionPane.showMessageDialog(this, "Select a question in the table first.",
-                    "No selection", JOptionPane.WARNING_MESSAGE);
+                    "No Selection", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if (!UIUtil.confirm(this, "Delete the selected question?")) {
+        if (!UIUtil.confirm(this, "Delete selected question #" + selectedQuestionId + "?")) {
             return;
         }
         try {

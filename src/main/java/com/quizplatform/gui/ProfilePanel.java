@@ -14,13 +14,14 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 
 /**
- * Participant: view profile data and change name / password.
- * The service keeps the old password hash when the password fields stay empty.
+ * Participant: view and manage personal profile data and update account password.
  */
 public class ProfilePanel extends JPanel {
 
@@ -36,9 +37,15 @@ public class ProfilePanel extends JPanel {
     public ProfilePanel(ParticipantDashboard dashboard, Participant participant) {
         this.dashboard = dashboard;
         this.participant = participant;
-        setLayout(new BorderLayout(0, 12));
+        setLayout(new BorderLayout(0, 14));
         setBackground(UIUtil.BACKGROUND);
-        setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+        setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
+
+        JPanel top = new JPanel(new BorderLayout(0, 2));
+        top.setBackground(UIUtil.BACKGROUND);
+        top.add(UIUtil.heading("Student Profile & Account Settings"), BorderLayout.NORTH);
+        top.add(UIUtil.mutedLabel("Update your display name or set a new password. Email is fixed as your unique login ID."), BorderLayout.SOUTH);
+        add(top, BorderLayout.NORTH);
 
         add(buildForm(), BorderLayout.CENTER);
         add(buildButtons(), BorderLayout.SOUTH);
@@ -46,32 +53,35 @@ public class ProfilePanel extends JPanel {
     }
 
     private JPanel buildForm() {
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBackground(Color.WHITE);
-        form.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 224, 228)),
-                BorderFactory.createEmptyBorder(20, 24, 20, 24)));
+        JPanel wrapper = new JPanel(new GridBagLayout());
+        wrapper.setBackground(UIUtil.BACKGROUND);
+
+        JPanel card = new JPanel(new GridBagLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIUtil.BORDER, 1),
+                BorderFactory.createEmptyBorder(22, 28, 22, 28)));
+
         GridBagConstraints gc = new GridBagConstraints();
-        gc.insets = new Insets(9, 6, 9, 6);
+        gc.insets = new Insets(8, 8, 8, 8);
         gc.anchor = GridBagConstraints.WEST;
 
         emailField.setEditable(false);
-        emailField.setBackground(new Color(240, 240, 240));
+        emailField.setBackground(new Color(0xF1, 0xF5, 0xF9));
 
-        addRow(form, gc, 0, "Name:", nameField);
-        addRow(form, gc, 1, "Email (login):", emailField);
-        addRow(form, gc, 2, "Role:", new JLabel(participant.getRole().getLabel()));
-        addRow(form, gc, 3, "New Password:", newPasswordField);
-        addRow(form, gc, 4, "Confirm Password:", confirmPasswordField);
+        addRow(card, gc, 0, "Display Name:", nameField);
+        addRow(card, gc, 1, "Registered Email:", emailField);
+        addRow(card, gc, 2, "Assigned Role:", UIUtil.statusBadge(participant.getRole().getLabel()));
+        addRow(card, gc, 3, "New Password:", newPasswordField);
+        addRow(card, gc, 4, "Confirm Password:", confirmPasswordField);
 
-        JLabel hint = new JLabel("<html><small>Leave the password fields empty to keep your "
-                + "current password.</small></html>");
-        hint.setFont(UIUtil.smallFont());
-        hint.setForeground(Color.GRAY);
+        JLabel hint = new JLabel("<html><small style='color: #64748B;'>Leave the password fields blank if you do not want to change your current password.</small></html>");
         gc.gridx = 1;
         gc.gridy = 5;
-        form.add(hint, gc);
-        return form;
+        card.add(hint, gc);
+
+        wrapper.add(card);
+        return wrapper;
     }
 
     private void addRow(JPanel form, GridBagConstraints gc, int row, String label, java.awt.Component field) {
@@ -79,16 +89,23 @@ public class ProfilePanel extends JPanel {
         gc.gridy = row;
         form.add(UIUtil.fieldLabel(label), gc);
         gc.gridx = 1;
+        if (field instanceof JTextField tf) {
+            tf.setFont(UIUtil.normalFont());
+            tf.setPreferredSize(new Dimension(250, 32));
+        }
         form.add(field, gc);
     }
 
     private JPanel buildButtons() {
-        JPanel panel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         panel.setBackground(UIUtil.BACKGROUND);
-        JButton save = UIUtil.successButton("Save Changes");
-        JButton reload = UIUtil.neutralButton("Reload");
+
+        JButton save = UIUtil.successButton("💾 Save Profile Changes");
+        JButton reload = UIUtil.secondaryButton("Reset Changes");
+
         save.addActionListener(e -> saveProfile());
         reload.addActionListener(e -> loadValues());
+
         panel.add(save);
         panel.add(reload);
         return panel;
@@ -106,9 +123,8 @@ public class ProfilePanel extends JPanel {
             String newPassword = new String(newPasswordField.getPassword());
             String confirm = new String(confirmPasswordField.getPassword());
             if (!newPassword.isEmpty() && !newPassword.equals(confirm)) {
-                throw new InvalidUserException("Passwords do not match.");
+                throw new InvalidUserException("Password confirmation does not match new password.");
             }
-            // blank password -> UserService keeps the existing hash
             Participant updated = new Participant(participant.getId(),
                     nameField.getText().trim(), participant.getEmail(), newPassword);
             userService.updateUser(updated);
@@ -118,7 +134,7 @@ public class ProfilePanel extends JPanel {
                     JOptionPane.INFORMATION_MESSAGE);
             dashboard.refreshStatistics();
         } catch (InvalidUserException | DatabaseException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), "Update failed",
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Update Failed",
                     JOptionPane.ERROR_MESSAGE);
         }
     }

@@ -167,6 +167,10 @@ public class Result {
         return String.format("%02d:%02d", minutes, seconds);
     }
 
+    public boolean isPassed() {
+        return percentage >= 60.0;
+    }
+
     @Override
     public String toString() {
         return "Result{id=" + id + ", quiz='" + quizTitle + "', score=" + obtainedMarks

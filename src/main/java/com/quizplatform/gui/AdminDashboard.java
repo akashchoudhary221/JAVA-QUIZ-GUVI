@@ -10,19 +10,23 @@ import com.quizplatform.service.ResultService;
 import com.quizplatform.service.UserService;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 
 /**
- * Admin dashboard - navigation:
- * Dashboard | Users | Quiz Approval | System Settings | Reports | Logout
+ * Admin dashboard.
+ * Navigation: Dashboard | Users | Quiz Approval | System Settings | Reports | Logout
  *
- * The home card shows overall platform statistics
- * (total users, total quizzes, pending, approved, total attempts).
+ * Home screen displays platform KPI metric cards:
+ * total users, total quizzes, pending approval, approved, and total attempts.
  */
 public class AdminDashboard extends DashboardFrame {
 
@@ -38,7 +42,7 @@ public class AdminDashboard extends DashboardFrame {
     private final JLabel statAttempts = statValue();
 
     public AdminDashboard(Admin admin) {
-        super(admin, "Admin Dashboard");
+        super(admin, "Admin Administration Suite");
 
         addCard("home", buildHomePanel());
         addCard("users", new UserManagementPanel());
@@ -46,12 +50,11 @@ public class AdminDashboard extends DashboardFrame {
         addCard("settings", new SystemSettingsPanel());
         addCard("reports", new ResultManagementPanel(admin));
 
-        addSidebarButton(createNavButton("Dashboard", "home"));
-        addSidebarButton(createNavButton("Users", "users"));
-        addSidebarButton(createNavButton("Quiz Approval", "quizzes"));
-        addSidebarButton(createNavButton("System Settings", "settings"));
-        addSidebarButton(createNavButton("Reports", "reports"));
-        addSidebarButton(createLogoutButton());
+        addSidebarButton(createNavButton("📊 Dashboard", "home"));
+        addSidebarButton(createNavButton("👥 User Management", "users"));
+        addSidebarButton(createNavButton("📝 Quiz Approval", "quizzes"));
+        addSidebarButton(createNavButton("⚙️ System Settings", "settings"));
+        addSidebarButton(createNavButton("📈 Platform Reports", "reports"));
 
         showCard("home");
         refreshStatistics();
@@ -60,64 +63,88 @@ public class AdminDashboard extends DashboardFrame {
     private JLabel statValue() {
         JLabel label = new JLabel("-");
         label.setFont(new Font("Segoe UI", Font.BOLD, 30));
-        label.setForeground(UIUtil.ACCENT);
-        label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        label.setForeground(UIUtil.TEXT);
         return label;
     }
 
-    private JPanel statCard(String caption, JLabel value) {
-        JPanel card = new JPanel(new GridLayout(2, 1));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 224, 228)),
-                BorderFactory.createEmptyBorder(18, 10, 18, 10)));
-        card.add(value);
-        JLabel captionLabel = new JLabel(caption, javax.swing.SwingConstants.CENTER);
-        captionLabel.setFont(UIUtil.smallFont());
-        captionLabel.setForeground(UIUtil.TEXT);
-        card.add(captionLabel);
-        return card;
-    }
-
     private JPanel buildHomePanel() {
-        JPanel home = new JPanel(new java.awt.BorderLayout(0, 8));
+        JPanel home = new JPanel(new BorderLayout(0, 16));
         home.setBackground(UIUtil.BACKGROUND);
-        home.setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24));
+        home.setBorder(BorderFactory.createEmptyBorder(22, 24, 22, 24));
 
-        JLabel heading = UIUtil.heading("Platform Statistics");
-        home.add(heading, java.awt.BorderLayout.NORTH);
+        // Top Banner
+        JPanel banner = new JPanel(new BorderLayout());
+        banner.setBackground(Color.WHITE);
+        banner.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIUtil.BORDER, 1),
+                BorderFactory.createEmptyBorder(18, 22, 18, 22)));
 
+        JPanel bannerText = new JPanel();
+        bannerText.setLayout(new BoxLayout(bannerText, BoxLayout.Y_AXIS));
+        bannerText.setBackground(Color.WHITE);
+
+        JLabel welcome = new JLabel("Platform Administration Overview");
+        welcome.setFont(UIUtil.titleFont());
+        welcome.setForeground(UIUtil.TEXT);
+
+        JLabel sub = new JLabel("Real-time metrics, user management, and quiz approval workflows.");
+        sub.setFont(UIUtil.normalFont());
+        sub.setForeground(UIUtil.TEXT_MUTED);
+
+        bannerText.add(welcome);
+        bannerText.add(Box.createVerticalStrut(4));
+        bannerText.add(sub);
+        banner.add(bannerText, BorderLayout.WEST);
+
+        JButton refreshBtn = UIUtil.primaryButton("🔄 Refresh Stats");
+        refreshBtn.addActionListener(e -> refreshStatistics());
+        JPanel btnWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 4));
+        btnWrap.setBackground(Color.WHITE);
+        btnWrap.add(refreshBtn);
+        banner.add(btnWrap, BorderLayout.EAST);
+
+        home.add(banner, BorderLayout.NORTH);
+
+        // Grid of Modern KPI Metric Cards
         JPanel grid = new JPanel(new GridLayout(2, 3, 16, 16));
         grid.setBackground(UIUtil.BACKGROUND);
-        grid.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
-        grid.add(statCard("Total Users", statUsers));
-        grid.add(statCard("Total Quizzes", statQuizzes));
-        grid.add(statCard("Pending Quizzes", statPending));
-        grid.add(statCard("Approved Quizzes", statApproved));
-        grid.add(statCard("Total Attempts", statAttempts));
 
-        JButton refresh = UIUtil.primaryButton("Refresh Statistics");
-        refresh.addActionListener(e -> refreshStatistics());
-        JPanel south = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
-        south.setBackground(UIUtil.BACKGROUND);
-        south.add(refresh);
-        grid.add(south);
+        grid.add(UIUtil.metricCard("TOTAL USERS", statUsers, "Faculty & student accounts", UIUtil.ACCENT));
+        grid.add(UIUtil.metricCard("TOTAL QUIZZES", statQuizzes, "All platform quizzes", UIUtil.PRIMARY_LIGHT));
+        grid.add(UIUtil.metricCard("PENDING APPROVAL", statPending, "Quizzes awaiting review", UIUtil.WARNING));
+        grid.add(UIUtil.metricCard("APPROVED QUIZZES", statApproved, "Active and ready to attempt", UIUtil.SUCCESS));
+        grid.add(UIUtil.metricCard("TOTAL ATTEMPTS", statAttempts, "Completed participant submissions", UIUtil.ACCENT));
 
-        home.add(grid, java.awt.BorderLayout.CENTER);
+        // Quick tips card
+        JPanel tipsCard = new JPanel(new BorderLayout(0, 6));
+        tipsCard.setBackground(Color.WHITE);
+        tipsCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIUtil.BORDER, 1),
+                BorderFactory.createEmptyBorder(16, 18, 16, 18)));
+
+        JLabel tipsTitle = UIUtil.heading("Administrative Quick Actions");
+        tipsCard.add(tipsTitle, BorderLayout.NORTH);
+
+        JLabel tipsText = new JLabel("<html><body style='font-family: Segoe UI; color: #64748B; font-size: 11pt; line-height: 1.4;'>"
+                + "• Navigate to <b>Quiz Approval</b> to inspect and approve pending quizzes.<br>"
+                + "• Go to <b>User Management</b> to assign roles or create demo users.<br>"
+                + "• Check <b>Platform Reports</b> for detailed student results.</body></html>");
+        tipsCard.add(tipsText, BorderLayout.CENTER);
+        grid.add(tipsCard);
+
+        home.add(grid, BorderLayout.CENTER);
         return home;
     }
 
-    /** Loads all dashboard counters from the database (JDBC through the DAOs). */
-    private void refreshStatistics() {
+    /** Loads all dashboard counters from the database via DAOs. */
+    public void refreshStatistics() {
         try {
             statUsers.setText(String.valueOf(userService.getAllUsers().size()));
             statQuizzes.setText(String.valueOf(quizService.countAllQuizzes()));
-            statPending.setText(String.valueOf(
-                    quizService.countQuizzesByStatus(QuizStatus.PENDING_APPROVAL.name())));
-            statApproved.setText(String.valueOf(
-                    quizService.countQuizzesByStatus(QuizStatus.APPROVED.name())));
+            statPending.setText(String.valueOf(quizService.countQuizzesByStatus(QuizStatus.PENDING_APPROVAL.name())));
+            statApproved.setText(String.valueOf(quizService.countQuizzesByStatus(QuizStatus.APPROVED.name())));
             statAttempts.setText(String.valueOf(attemptDAO.countAllAttempts()));
-            setStatus("Statistics refreshed");
+            setStatus("Platform metrics updated successfully");
         } catch (DatabaseException e) {
             UIUtil.error(this, "Could not load statistics:\n" + e.getMessage());
         }

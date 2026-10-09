@@ -1,5 +1,7 @@
 package com.quizplatform;
 
+import com.quizplatform.gui.UIUtil;
+
 import javax.swing.SwingUtilities;
 
 /**
@@ -12,6 +14,9 @@ import javax.swing.SwingUtilities;
 public class QuizApplication {
 
     public static void main(String[] args) {
+        // Initialize modern FlatLaf theme and design system tokens
+        UIUtil.setupTheme();
+
         // Swing components must be created on the Event Dispatch Thread (EDT)
         // Demonstrates correct Swing threading
         SwingUtilities.invokeLater(() -> {
