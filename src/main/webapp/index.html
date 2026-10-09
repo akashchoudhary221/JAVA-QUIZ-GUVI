@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Java-Based Online Quiz Platform | Academic Web & Desktop Suite</title>
+    <title>Online Quiz Platform | Interactive Learning & Assessment Portal</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -13,117 +13,174 @@
         <a href="index.html" class="brand">
             <span class="brand-icon">⚡</span>
             <span class="brand-title">QuizPlatform</span>
-            <span class="brand-badge">Academic Project</span>
+            <span class="brand-badge">Learning & Assessment</span>
         </a>
         <nav>
             <a href="index.html" class="active">Home</a>
+            <a href="quiz">Explore Quizzes</a>
             <a href="login">Sign In</a>
         </nav>
     </div>
 </header>
 
 <main>
-    <section class="card" style="border-left: 4px solid var(--accent);">
-        <div class="card-header">
+    <!-- Hero Banner -->
+    <section class="card" style="border-left: 4px solid var(--accent); padding: 32px 36px;">
+        <div class="card-header" style="border-bottom: none; margin-bottom: 8px; padding-bottom: 0;">
             <div>
-                <h2>Java-Based Online Quiz Platform</h2>
-                <p class="subtitle" style="margin-bottom: 0;">Comprehensive Academic Solution: Core Java, Swing GUI, Java Servlets, JDBC & MySQL</p>
-            </div>
-            <div>
-                <a class="button" href="login">Launch Web Portal &rarr;</a>
+                <span style="font-size: 13px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em;">Digital Assessment Solution</span>
+                <h1 style="font-size: 28px; margin-top: 6px; margin-bottom: 8px; color: var(--text);">Master Your Knowledge with Interactive Online Quizzes</h1>
+                <p class="subtitle" style="font-size: 16px; margin-bottom: 0; max-width: 780px;">
+                    Take timed mock tests, challenge yourself across diverse topics, track your performance in real time, and receive personalized feedback from instructors.
+                </p>
             </div>
         </div>
 
-        <p style="margin-bottom: 14px;">
-            This project is engineered using <b>100% pure Java technologies</b> without external web frameworks like React, Node.js, Express, PHP, or Python.
-            It demonstrates mastery over Object-Oriented Programming, Multithreading, Concurrent Synchronization, DAO architecture, and Secure JDBC transactions.
-        </p>
+        <div style="margin: 20px 0 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <a class="button" href="quiz" style="margin-top: 0; padding: 11px 22px; font-size: 15px;">🚀 Explore Available Quizzes</a>
+            <a class="button secondary" href="login" style="margin-top: 0; padding: 11px 22px; font-size: 15px;">🔐 Sign In to Portal</a>
+        </div>
 
-        <div class="stats">
+        <!-- Platform Metric Cards -->
+        <div class="stats" style="margin-top: 24px; margin-bottom: 0;">
             <div class="stat">
-                <p class="stat-label">Language</p>
-                <span class="stat-num" style="font-size: 24px;">Java 17/21</span>
+                <p class="stat-label">Assessment Mode</p>
+                <span class="stat-num" style="font-size: 22px;">⏱️ Timed Tests</span>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Live countdown & auto-submission</p>
             </div>
             <div class="stat success">
-                <p class="stat-label">Architecture</p>
-                <span class="stat-num" style="font-size: 24px;">DAO & Service</span>
+                <p class="stat-label">Question Bank</p>
+                <span class="stat-num" style="font-size: 22px;">❓ Curated MCQs</span>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Options A-D with explanations</p>
             </div>
             <div class="stat warning">
-                <p class="stat-label">Persistence</p>
-                <span class="stat-num" style="font-size: 24px;">Plain JDBC</span>
+                <p class="stat-label">Evaluation</p>
+                <span class="stat-num" style="font-size: 22px;">📊 Instant Scoring</span>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Detailed breakdown & analytics</p>
             </div>
             <div class="stat">
-                <p class="stat-label">Web Engine</p>
-                <span class="stat-num" style="font-size: 24px;">Java Servlets</span>
+                <p class="stat-label">Mentorship</p>
+                <span class="stat-num" style="font-size: 22px;">💬 Faculty Review</span>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Personalized educator feedback</p>
             </div>
         </div>
     </section>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px;">
+    <!-- Key Platform Capabilities -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 24px;">
         <section class="card" style="margin-bottom: 0;">
-            <h3>🖥️ Swing Desktop Application</h3>
-            <p class="subtitle">Primary Desktop Client with Dedicated Countdown Timer Thread</p>
-            <p style="font-size: 14px; margin-bottom: 12px;">
-                Features FlatLaf modern styling, role-based dashboards, interactive question palette, live countdown timer, and instant result analytics.
+            <div style="font-size: 28px; margin-bottom: 10px;">⏱️</div>
+            <h3 style="font-size: 18px; margin-bottom: 6px;">Timed Assessments</h3>
+            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">
+                Simulate real exam pressure with dynamic timers. Keep an eye on remaining seconds, navigate between questions seamlessly, and submit whenever you're ready.
             </p>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">Launch desktop GUI:</p>
-            <pre>mvn compile exec:java</pre>
         </section>
 
         <section class="card" style="margin-bottom: 0;">
-            <h3>🌐 Java Servlet Web Module</h3>
-            <p class="subtitle">Server-Side Web Interface Packaged as a Standard WAR</p>
-            <p style="font-size: 14px; margin-bottom: 12px;">
-                Demonstrates <code>HttpServlet</code>, session tracking via <code>HttpSession</code>, role-based authorization filters, and transactional submission.
+            <div style="font-size: 28px; margin-bottom: 10px;">📈</div>
+            <h3 style="font-size: 18px; margin-bottom: 6px;">Instant Performance Reports</h3>
+            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">
+                Get immediate scores, accuracy percentages, pass/fail status, and question-by-question review of your chosen answers versus the correct keys.
             </p>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">Build deployable WAR for Apache Tomcat:</p>
-            <pre>mvn clean package</pre>
+        </section>
+
+        <section class="card" style="margin-bottom: 0;">
+            <div style="font-size: 28px; margin-bottom: 10px;">✍️</div>
+            <h3 style="font-size: 18px; margin-bottom: 6px;">Creator Authoring Studio</h3>
+            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">
+                Educators and creators can create quizzes, author four-choice questions with marks and explanations, submit for approval, and monitor student test results.
+            </p>
+        </section>
+
+        <section class="card" style="margin-bottom: 0;">
+            <div style="font-size: 28px; margin-bottom: 10px;">🛡️</div>
+            <h3 style="font-size: 18px; margin-bottom: 6px;">Admin & Quality Control</h3>
+            <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5;">
+                Administrators oversee platform integrity by approving or rejecting submitted quizzes, managing user accounts and roles, and inspecting system activity reports.
+            </p>
         </section>
     </div>
 
+    <!-- How It Works Section -->
     <section class="card">
-        <h3>🔑 Evaluator & Demo Accounts</h3>
-        <p class="subtitle">Pre-configured roles ready for academic presentation and viva evaluation</p>
+        <h3 style="font-size: 20px; margin-bottom: 4px;">🚀 How It Works</h3>
+        <p class="subtitle" style="margin-bottom: 20px;">A seamless 3-step process to test, learn, and excel</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+            <div style="background: var(--bg); padding: 18px; border-radius: var(--radius-sm); border-left: 3px solid var(--accent);">
+                <div style="font-weight: 700; color: var(--accent); margin-bottom: 6px;">Step 1: Choose a Quiz</div>
+                <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
+                    Browse the catalog of approved quizzes across various topics and difficulty levels.
+                </p>
+            </div>
+            <div style="background: var(--bg); padding: 18px; border-radius: var(--radius-sm); border-left: 3px solid var(--warning);">
+                <div style="font-weight: 700; color: var(--warning); margin-bottom: 6px;">Step 2: Attempt the Test</div>
+                <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
+                    Answer questions before the countdown timer runs out. Questions auto-submit if time expires.
+                </p>
+            </div>
+            <div style="background: var(--bg); padding: 18px; border-radius: var(--radius-sm); border-left: 3px solid var(--success);">
+                <div style="font-weight: 700; color: var(--success); margin-bottom: 6px;">Step 3: Review & Grow</div>
+                <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
+                    Analyze correct answers, study detailed question explanations, and read mentor feedback.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Access Section -->
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <h3>🔑 Instant Demo Access</h3>
+                <p class="subtitle" style="margin-bottom: 0;">Test the platform right away using any of the pre-configured accounts below</p>
+            </div>
+            <div>
+                <a class="button" href="login" style="margin-top: 0;">Go to Sign In &rarr;</a>
+            </div>
+        </div>
+
         <table>
             <thead>
                 <tr>
                     <th>Role</th>
                     <th>Email Address</th>
                     <th>Password</th>
-                    <th>System Privileges & Functionality</th>
+                    <th>Capabilities & Access</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><span class="badge badge-rejected">ADMIN</span></td>
-                    <td><b>admin@quiz.com</b></td>
-                    <td><code>admin123</code></td>
-                    <td>User CRUD, Role assignment, Quiz Approval/Rejection, System Settings, Platform Reports</td>
+                    <td><span class="badge badge-approved">PARTICIPANT</span></td>
+                    <td><b>student@quiz.com</b></td>
+                    <td><code>student123</code></td>
+                    <td>Browse approved quizzes, take timed assessments, view score reports, review faculty feedback</td>
                 </tr>
                 <tr>
                     <td><span class="badge badge-pending">QUIZ CREATOR</span></td>
                     <td><b>creator@quiz.com</b></td>
                     <td><code>creator123</code></td>
-                    <td>Quiz creation, Question authoring (A-D options), Duration setting, Submit for approval, Student feedback</td>
+                    <td>Create quizzes, author questions (A-D options), set duration, inspect student scores, submit for approval</td>
                 </tr>
                 <tr>
-                    <td><span class="badge badge-approved">PARTICIPANT</span></td>
-                    <td><b>student@quiz.com</b></td>
-                    <td><code>student123</code></td>
-                    <td>Browse approved quizzes, Timed test taking, Question navigator, Instant score report, Attempt history</td>
+                    <td><span class="badge badge-rejected">ADMIN</span></td>
+                    <td><b>admin@quiz.com</b></td>
+                    <td><code>admin123</code></td>
+                    <td>User management (CRUD & roles), review & approve/reject quizzes, system settings, activity reports</td>
                 </tr>
             </tbody>
         </table>
-        <div style="margin-top: 18px; display: flex; gap: 12px;">
+
+        <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
             <a class="button" href="login">Sign In with Demo Account</a>
-            <a class="button secondary" href="quiz">View Available Quizzes</a>
+            <a class="button secondary" href="quiz">Browse Available Quizzes</a>
         </div>
     </section>
 </main>
 
 <footer>
-    <p>Java 17 &bull; Java Servlets &bull; Plain JDBC &bull; MySQL &bull; Apache Tomcat 9/10 &bull; Swing GUI</p>
-    <p style="margin-top: 4px; font-size: 12px;">Java-Based Online Quiz Platform &mdash; Academic Project Demonstration</p>
+    <p>QuizPlatform &bull; Interactive Online Learning & Assessment Portal</p>
+    <p style="margin-top: 4px; font-size: 12px; color: #94a3b8;">Empowering students and educators through real-time digital evaluations.</p>
 </footer>
 
 </body>
