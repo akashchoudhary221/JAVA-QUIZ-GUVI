@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Java-Based Online Quiz Platform Architecture",
+    "subtitle": "Dual Web & Desktop Architecture with 11 Core Components & 1 Primary Path",
+    "output": "quiz-platform-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "users", "type": "external", "label": "Platform Users", "sublabel": "Student / Creator / Admin", "pos": [30, 220], "size": [150, 64], "icon": "person" },
+    { "id": "web-client", "type": "frontend", "label": "1. Web Client", "sublabel": "HTML5 / CSS / Vanilla JS", "pos": [220, 150], "size": [150, 60], "icon": "frontend" },
+    { "id": "desktop-gui", "type": "frontend", "label": "2. Swing Desktop GUI", "sublabel": "FlatLaf Native Client", "pos": [220, 290], "size": [150, 60], "icon": "frontend" },
+    { "id": "auth-mgr", "type": "security", "label": "3. Auth & Session Mgr", "sublabel": "Role Access Controller", "pos": [410, 220], "size": [160, 64], "tag": "RBAC", "icon": "security" },
+    { "id": "authoring-studio", "type": "backend", "label": "5. Authoring Studio", "sublabel": "Question Builder A-D", "pos": [610, 90], "size": [160, 60], "icon": "backend" },
+    { "id": "assessment-engine", "type": "backend", "label": "4. Assessment Engine", "sublabel": "Countdown Timer Thread", "pos": [610, 220], "size": [160, 60], "tag": "Active Test", "icon": "clock" },
+    { "id": "governance-engine", "type": "backend", "label": "6. Governance Engine", "sublabel": "Quiz Review & User CRUD", "pos": [610, 350], "size": [160, 60], "icon": "briefcase" },
+    { "id": "scoring-service", "type": "backend", "label": "7. Scoring & Analytics", "sublabel": "Real-time Grading & Audit", "pos": [810, 150], "size": [160, 60], "icon": "flag" },
+    { "id": "service-layer", "type": "backend", "label": "8. Application Services", "sublabel": "Quiz / Result / User Service", "pos": [810, 280], "size": [160, 60], "icon": "backend" },
+    { "id": "dao-layer", "type": "backend", "label": "9. DAO Data Access", "sublabel": "Quiz / Result / User DAO", "pos": [1010, 150], "size": [160, 60], "icon": "database" },
+    { "id": "jdbc-mgr", "type": "backend", "label": "10. JDBC Connection Mgr", "sublabel": "Pool & Transaction Lifecycle", "pos": [1010, 280], "size": [160, 60], "tag": "JDBC Pool", "icon": "database" },
+    { "id": "mysql-db", "type": "database", "label": "11. Relational Database", "sublabel": "MySQL quiz_db Schema", "pos": [1010, 410], "size": [160, 60], "icon": "database" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Tomcat Servlet Container & Application Runtime", "wraps": ["auth-mgr", "assessment-engine", "authoring-studio", "governance-engine", "scoring-service", "service-layer", "dao-layer", "jdbc-mgr"] },
+    { "kind": "security-group", "label": "Persistence & Storage Boundary", "wraps": ["dao-layer", "jdbc-mgr", "mysql-db"] }
+  ],
+  "connections": [
+    { "id": "users-to-web", "from": "users", "to": "web-client", "label": "HTTP :8081", "variant": "emphasis" },
+    { "id": "users-to-desktop", "from": "users", "to": "desktop-gui", "label": "JVM Desktop", "variant": "dashed" },
+    { "id": "web-to-auth", "from": "web-client", "to": "auth-mgr", "label": "Authenticate", "variant": "security" },
+    { "id": "desktop-to-auth", "from": "desktop-gui", "to": "auth-mgr", "label": "Login Session", "variant": "security" },
+    { "id": "auth-to-assessment", "from": "auth-mgr", "to": "assessment-engine", "label": "Student Role", "variant": "emphasis" },
+    { "id": "auth-to-authoring", "from": "auth-mgr", "to": "authoring-studio", "label": "Creator Role", "variant": "dashed" },
+    { "id": "auth-to-gov", "from": "auth-mgr", "to": "governance-engine", "label": "Admin Role", "variant": "dashed" },
+    { "id": "authoring-to-gov", "from": "authoring-studio", "to": "governance-engine", "label": "Submit Approval", "variant": "dashed" },
+    { "id": "assessment-to-scoring", "from": "assessment-engine", "to": "scoring-service", "label": "Submit / Timeout", "variant": "emphasis" },
+    { "id": "scoring-to-service", "from": "scoring-service", "to": "service-layer", "label": "Evaluate Marks", "variant": "emphasis" },
+    { "id": "gov-to-service", "from": "governance-engine", "to": "service-layer", "label": "Approve / Update" },
+    { "id": "service-to-dao", "from": "service-layer", "to": "dao-layer", "label": "Dispatch Entities", "variant": "emphasis" },
+    { "id": "dao-to-jdbc", "from": "dao-layer", "to": "jdbc-mgr", "label": "Execute SQL", "variant": "emphasis" },
+    { "id": "jdbc-to-db", "from": "jdbc-mgr", "to": "mysql-db", "label": "TCP :3306 Commit", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Presentation Clients",
+      "items": [
+        "Web Client (Servlets, HTML5, CSS, Vanilla JS) accessible on port 8081",
+        "Swing Desktop Client with FlatLaf styling and dedicated timer thread"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Primary Execution Path",
+      "items": [
+        "Participant authenticates & launches approved mock quiz",
+        "Assessment Engine counts down time and handles auto-submission",
+        "Scoring Service grades answers and persists result via JDBC in MySQL",
+        "Instant score report, review breakdown, and faculty remarks returned"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Governance & Authoring",
+      "items": [
+        "Quiz Creator authors 4-choice questions (A-D) with marks and explanations",
+        "Administrator verifies and approves/rejects quizzes before publishing",
+        "User CRUD and system settings configured in admin dashboard"
+      ]
+    }
+  ]
+}

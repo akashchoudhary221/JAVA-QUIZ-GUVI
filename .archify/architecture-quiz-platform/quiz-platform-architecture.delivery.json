@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "112b8774-55f9-419f-af2b-bbc4b672fd3c",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\manis\\OneDrive\\Desktop\\JAVA-QUIZ-GUVI\\.archify\\architecture-quiz-platform\\candidate.json",
+  "output": "C:\\Users\\manis\\OneDrive\\Desktop\\JAVA-QUIZ-GUVI\\.archify\\architecture-quiz-platform\\quiz-platform-architecture.html",
+  "specification": {
+    "sha256": "fbc15e77b61e7429a6b2cd86ecfb1e926c318859d1f1cb841a0c84b19f846896",
+    "bytes": 5689
+  },
+  "artifact": {
+    "sha256": "92510997a1556ba07ae6be675734ce9be7f934d97a3a77295b72cc838dc752b6",
+    "bytes": 776163
+  }
+}
