@@ -1,0 +1,22 @@
+# Maven build directory
+target/
+
+# Version control
+.git/
+.gitignore
+
+# IDE and editor files
+.idea/
+*.iml
+.eclipse/
+.settings/
+.classpath
+.project
+.vscode/
+
+# Local logs and scripts artifacts
+*.log
+smoke_out.txt
+smoke_err.txt
+Thumbs.db
+.archify/
